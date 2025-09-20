@@ -1,0 +1,16 @@
+# Node/TS/Next
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.log
+.env
+.env.*
+# Godot SDK
+.godot/
+*.import
+# OS/IDE
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
