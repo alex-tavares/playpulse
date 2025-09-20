@@ -1,18 +1,27 @@
-# Project Brief (Codex anchor)
+# PlayPulse — Project Brief (Codex Anchor)
 
-## Goal
-Open-source telemetry + analytics for Godot games: SDK → ingest → Postgres → analytics API → Next.js dashboard.
+## Purpose
+Open-source, production-credible **game telemetry & analytics** for Godot 4 titles (e.g., MythClash): a tiny SDK → secure ingest → warehouse → analytics API → polished dashboard (public + private).
 
-## Non-negotiables
-- TypeScript everywhere; pnpm workspaces; Node 20.
-- Postgres primary store; no raw PII; IP truncation; k-anonymity.
-- Public vs Private data split; auth with NextAuth.
+## Outcomes
+- Instrument a Godot 4 game with a lightweight SDK.
+- Collect privacy-safe data (no PII, consent-aware) to a Postgres warehouse.
+- Serve anonymized public metrics and deeper private insights.
+- Ship a modern Next.js dashboard that’s recruiter-ready.
 
-## First MVP scope
-- SDK: `track`, batch flush, events (session, match_start, match_end).
-- Ingest: POST /events with Zod validation + HMAC + Postgres.
-- Analytics API: sessions/day, active players, character popularity.
-- Dashboard: 2 public charts, 1 private chart.
+## Non‑Negotiables
+- **TypeScript everywhere** (strict).
+- **Postgres** as primary store; **Prisma** data access.
+- **Privacy by design**: no PII, IP truncation, k-anonymity, explicit consent flag.
+- **Tests-first loop** with Codex: generate tests → implement minimal diff → green CI.
 
-## Definition of Done
-- Tests pass, docs updated, CI green, demo dataset renders charts.
+## MVP Scope
+- SDK events: `session_start`, `session_end`, `match_start`, `match_end`, `character_selected`.
+- Ingest: `POST /events` with Zod validation, API key + HMAC, rate limit, body limit.
+- Analytics: sessions/day, active players, character popularity; retention (D1/D7) soon after.
+- Dashboard: public (2 charts) + private (1–2 charts).
+
+## Success Criteria
+- End-to-end demo dataset renders charts locally and on deployed preview.
+- CI runs tests on PR; branch protection active.
+- Public responses enforce k-anonymity; no raw identifiers exposed.
