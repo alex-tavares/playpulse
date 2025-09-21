@@ -18,3 +18,5 @@ We will define the telemetry contract incrementally. For now, keep **principles*
 - (Performance/errors will be specified later)
 
 A formal spec (Zod/OpenAPI) will be generated during the **Ingest MVP** milestone.
+
+- Draft candidate events live in [RFC-002 — Telemetry Event Candidates](RFC/RFC-002.md) until schemas are finalized.
