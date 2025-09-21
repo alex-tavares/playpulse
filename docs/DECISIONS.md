@@ -7,3 +7,4 @@
 - 2025-09-21: Ratified RFC-003 ingest security posture (auth headers, replay window, rate limits, logging).
 - 2025-09-21: Ratified RFC-004 throughput assumptions, SLOs, and rate limit math for ingest MVP.
 - 2025-09-21: Ratified RFC-005 observability metrics, alerts, and logging schema for ingest MVP.
+- 2025-09-21: Ratified RFC-006 dashboard IA, initial charts, and k-anonymity UX for MVP.
