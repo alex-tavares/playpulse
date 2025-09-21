@@ -1,12 +1,12 @@
 # RFC-001 — PlayPulse PRD
 
-## Problem (Product Manager + Tech Lead)
+## Problem
 Godot 4 teams still choose among three imperfect telemetry paths:
 - **Hosted analytics vendors** (GameAnalytics, PlayFab) deliver polished dashboards fast, but they’re closed-source, multi-engine, and route sensitive metrics through third-party clouds.
 - **Generic analytics platforms** (Firebase, Amplitude) bring impressive tooling, yet need custom Godot shims, lock you into vendor pricing, and keep raw data outside your governance.
 - **DIY pipelines** (OpenTelemetry + Kafka/Grafana, etc.) preserve control, but assembling them without a Godot-native SDK or ops expertise stalls smaller teams.
 
-## Our Solution (Product + Tech Leads, with Security sign-off)
+## Our Solution
 PlayPulse gives Godot developers an open-source middle ground:
 - **GDScript-first SDK for Godot 4** designed for desktop projects today, with C# bindings and export targets (mobile/web) on the near-term roadmap.
 - **Auditable Node/TypeScript ingest service** that uses API keys + HMAC, applies consent gates, and enforces the privacy guardrails promised in the project brief.
@@ -14,7 +14,7 @@ PlayPulse gives Godot developers an open-source middle ground:
 - **Focused analytics out of the box**: sessions/day, active players, character popularity, and early retention cohorts—enough to show portfolio-ready insight without rebuilding funnels.
 - **Straightforward deployment for indies** via docker-compose or your own cloud infra, keeping telemetry under your control while remaining extensible if you decide to scale.
 
-## Target Users & Needs (Product + UX Research)
+## Target Users & Needs
 - **Primary**: Small Godot 4 teams (solo devs to 5-person studios) shipping gameplay-driven titles—action RPGs, roguelites, builders, narrative games—that need to understand player behavior to iterate post-launch. They want instrumentation that fits Godot’s scene graph, gives immediate retention/engagement reads, and stays within indie budgets.
 - **Secondary**: Technical directors or senior engineers mentoring student/hobby teams who need a privacy-safe reference stack to teach telemetry fundamentals without wiring a custom backend.
 - **Jobs-to-be-done**: Measure session length, level progression, character/build balance, and churn across updates; verify that consent policies are applied; share polished dashboards in pitch decks or Steam updates.
@@ -36,14 +36,14 @@ PlayPulse gives Godot developers an open-source middle ground:
 - Managed hosting/commercial SaaS operations, billing, or support SLAs.
 - Player-level CRM workflows or individualized alerts.
 
-## Success Metrics (Product + Data/Analytics)
+## Success Metrics
 - Demo dataset renders at least three charts (two public, one private) with refresh ≤15 minutes.
 - Ingest p95 latency ≤500 ms with ≥99% accepted events under demo load.
 - Analytics API enforces k-anonymity (no cohort <10) with automated tests.
 - Dashboard Lighthouse TTI ≤2 s p95 in demo build.
 - Developer can instrument a sample Godot scene in ≤30 minutes following docs.
 
-## Risks & Mitigations (Product + Engineering + Security)
+## Risks & Mitigations
 - SDK adoption friction → ship starter scenes, clear integration docs, and CI coverage for schema versions.
 - Ingest abuse or DoS → enforce rate limiting, HMAC verification, and request logging.
 - Privacy regressions → lint schemas, add CI tests for consent flags and k thresholds.
