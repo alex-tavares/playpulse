@@ -6,3 +6,4 @@
 - 2025-09-21: Drafted RFC-002 telemetry event candidates for Ingest MVP (pending review).
 - 2025-09-21: Ratified RFC-003 ingest security posture (auth headers, replay window, rate limits, logging).
 - 2025-09-21: Ratified RFC-004 throughput assumptions, SLOs, and rate limit math for ingest MVP.
+- 2025-09-21: Ratified RFC-005 observability metrics, alerts, and logging schema for ingest MVP.
