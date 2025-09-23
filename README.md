@@ -17,11 +17,11 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 ## Progress Snapshot
 **In repo today**
 - Monorepo layout and workspace directories for ingestion, analytics, and dashboard apps (`apps/`).
-- Early information architecture, chart specs, and privacy rules captured in `docs/RFC/RFC-006.md`.
+- Early information architecture, chart specs, and privacy rules captured in design RFCs (see `docs/RFC/RFC-006.md`).
 - Contributor and security guidelines to support incoming collaborators.
 
 **Active build**
-- Telemetry event schema and ingestion gateway prototype.
+- Telemetry event schema definition and ingestion gateway prototype in progress.
 - Dashboard shell with public/private metrics tabs, k-anonymity messaging, and chart scaffolding.
 
 **Up next**
