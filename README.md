@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** Pre-alpha. Repo scaffolding and design docs are in place while we stand up the ingestion pipeline and dashboard slices.
+> **Project status:** Discovery & design. Implementation work has not landed yet—we're finalizing contracts, architecture, and privacy guardrails before scaffolding the services.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
@@ -15,37 +15,37 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - **Dashboard** – Next.js 14 front end with shadcn/ui + Recharts for live and demo visualizations.
 
 ## Progress Snapshot
-**In repo today**
-- Monorepo layout and workspace directories for ingestion, analytics, and dashboard apps (`apps/`).
-- Early information architecture, chart specs, and privacy principles tracked across design RFCs (e.g., `docs/RFC/RFC-006.md`).
-- Contributor and security guidelines to support incoming collaborators.
+**What exists today**
+- Project brief, architecture notes, privacy posture, and supporting guides under `docs/` (see `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/PRIVACY.md`).
+- Decision log in `docs/DECISIONS.md` plus scoped RFCs in `docs/RFC/` (PRD, ingest security, throughput, observability, dashboard IA, etc.).
+- Placeholder workspace directories in `apps/` (`analytics-api`, `dashboard`, `ingest`) ready for their first implementation commits.
 
-**Active build**
-- Telemetry event schema definition and ingestion gateway prototype in progress.
-- Dashboard shell with public/private metrics tabs, k-anonymity messaging, and chart scaffolding.
+**Currently shaping**
+- Finalizing telemetry event contracts, ingest security posture, and observability requirements before coding begins.
+- Defining dashboard UX flows and k-anonymity rules for public vs. private views.
 
-**Up next**
-- Godot sample project wired to the ingestion API for end-to-end demos.
-- Seed analytics dataset and scripted fixtures for repeatable testing.
-- Deployment playbooks (Docker Compose + cloud baseline).
+**Next milestones**
+- Bootstrap the pnpm workspace with shared configs, linting, and test tooling.
+- Commit the ingestion API skeleton (Node/TypeScript, Postgres) with baseline validation and logging.
+- Land the dashboard shell and sample dataset for local demos.
 
 ## Repository Layout
 ```
 apps/
-  analytics-api/  # Telemetry and analytics services (Node/TypeScript)
-  dashboard/      # Next.js dashboard experience
-  ingest/         # Event gateway & worker processes
+  analytics-api/  # Placeholder for telemetry + analytics services (implementation pending)
+  dashboard/      # Placeholder for Next.js dashboard experience
+  ingest/         # Placeholder for event gateway & worker processes
 
 docs/
-  RFC/            # Product and architecture design docs
+  RFC/            # Product and architecture design docs + decision history
 
-packages/         # Shared SDKs & libraries (landing soon)
+packages/         # Reserved for shared SDKs & libraries (to be created)
 ```
 
 ## Getting Started (Pre-alpha)
-Tooling is landing alongside the first running services.
-- Clone the repo, install `pnpm`, and follow along in the RFCs while the workspace configuration is finalized.
-- Track progress via issues and RFC updates; expect breaking changes until we tag the first alpha release.
+Implementation has not started yet; we're still firming up the design docs.
+- Clone the repo if you want to review or contribute to planning materials.
+- Follow updates in the decision log and RFCs; expect rapid iteration until we tag the first alpha release.
 
 ## Roadmap Themes
 1. End-to-end telemetry loop from Godot sample game to analytics API.
@@ -53,6 +53,6 @@ Tooling is landing alongside the first running services.
 3. Hosting story: local Docker Compose for dev, lightweight cloud deploy guide.
 
 ## Stay in the Loop
-- Review open RFCs in `docs/RFC/` for product and technical decisions.
+- Review the decision log (`docs/DECISIONS.md`) and open RFCs in `docs/RFC/` for current product and technical thinking.
 - File ideas and questions as GitHub issues or discussions.
 - Reach out if you want to pilot the stack with your game—we are shaping the roadmap with early adopters.
