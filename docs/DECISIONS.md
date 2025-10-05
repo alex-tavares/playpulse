@@ -8,4 +8,4 @@
 - 2025-09-21: Ratified RFC-004 throughput assumptions, SLOs, and rate limit math for ingest MVP.
 - 2025-09-21: Ratified RFC-005 observability metrics, alerts, and logging schema for ingest MVP.
 - 2025-09-21: Ratified RFC-006 dashboard IA, initial charts, and k-anonymity UX for MVP.
-- 2025-09-21: Ratified RFC-007 Godot SDK surface, queue strategy, and reliability guarantees for MVP.
+- 2025-10-05: Ratified RFC-007 Godot SDK surface, queue strategy, and reliability guarantees for MVP.
