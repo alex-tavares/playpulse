@@ -10,3 +10,4 @@
 - 2025-09-21: Ratified RFC-006 dashboard IA, initial charts, and k-anonymity UX for MVP.
 - 2025-09-21: Ratified RFC-007 Godot SDK surface, queue strategy, and reliability guarantees for MVP.
 - 2025-09-21: Ratified RFC-008 storage model plan (events_raw partitions, derived views, refresh cadence).
+- 2025-09-21: Ratified RFC-009 environment definitions, release process, and incident runbooks for MVP.
