@@ -12,9 +12,9 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository now has the MVP design foundation plus the first runnable backend slice: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, and the first ingest service implementation in `apps/ingest`.
+The repository now has the MVP design foundation plus the first backend implementation slices: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, and the warehouse worker plus derived data flow in `apps/warehouse-worker`.
 
-The warehouse derivations, analytics read APIs, dashboard application, and Godot SDK still remain to be built. The raw write path and shared tooling foundation are in place, but the rest of the product stack is still implementation work.
+The analytics read APIs, dashboard application, and Godot SDK still remain to be built. The raw write path and warehouse derivation layer are now in place, but the rest of the product stack is still implementation work.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -64,15 +64,15 @@ The warehouse derivations, analytics read APIs, dashboard application, and Godot
 ## Phase 4 - Warehouse And Derived Data
 
 - [x] Create the raw-event storage model aligned with the ERD and RFC-008
-- [ ] Create `dim_dates`
-- [ ] Implement refreshable derived structures for sessions per day
-- [ ] Implement refreshable derived structures for character popularity
-- [ ] Implement retention cohort derivation for D1 and D7
-- [ ] Add refresh jobs or commands for 5-minute and nightly refresh cadence
-- [ ] Add zero-fill behavior through date joins
-- [ ] Store suppression flags in derived outputs
-- [ ] Add DB tests or integration coverage for inserts and derivations
-- [ ] Document the local seed and refresh workflow
+- [x] Create `dim_dates`
+- [x] Implement refreshable derived structures for sessions per day
+- [x] Implement refreshable derived structures for character popularity
+- [x] Implement retention cohort derivation for D1 and D7
+- [x] Add refresh jobs or commands for 5-minute and nightly refresh cadence
+- [x] Add zero-fill behavior through date joins
+- [x] Store suppression flags in derived outputs
+- [x] Add DB tests or integration coverage for inserts and derivations
+- [x] Document the local seed and refresh workflow
 
 ## Phase 5 - Analytics API MVP
 

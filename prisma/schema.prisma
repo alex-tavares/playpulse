@@ -31,3 +31,25 @@ model EventRaw {
   @@index([playerIdHash, occurredAt], map: "idx_events_raw_player_occurred")
   @@map("events_raw")
 }
+
+model DimDate {
+  calendarDate DateTime @id @db.Date @map("calendar_date")
+
+  @@map("dim_dates")
+}
+
+model RetentionCohort {
+  cohortDate       DateTime @db.Date @map("cohort_date")
+  gameId           String   @map("game_id")
+  cohortSize       Int      @map("cohort_size")
+  d1Retained       Int      @map("d1_retained")
+  d7Retained       Int      @map("d7_retained")
+  d1RetentionPct   Float    @map("d1_retention_pct")
+  d7RetentionPct   Float    @map("d7_retention_pct")
+  d1Suppressed     Boolean  @map("d1_suppressed")
+  d7Suppressed     Boolean  @map("d7_suppressed")
+  lastRefreshedAt  DateTime @db.Timestamptz(6) @map("last_refreshed_at")
+
+  @@id([cohortDate, gameId])
+  @@map("retention_cohorts")
+}

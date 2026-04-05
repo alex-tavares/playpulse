@@ -1,0 +1,24 @@
+{
+  "name": "@playpulse/warehouse-worker",
+  "private": true,
+  "type": "module",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/cli.ts",
+    "refresh:all": "tsx src/cli.ts refresh:all",
+    "refresh:retention": "tsx src/cli.ts refresh:retention",
+    "refresh:rolling": "tsx src/cli.ts refresh:rolling",
+    "seed:demo": "tsx src/cli.ts seed:demo",
+    "test": "vitest run src/**/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@playpulse/config": "workspace:*",
+    "@playpulse/schemas": "workspace:*",
+    "@playpulse/testkit": "workspace:*",
+    "@prisma/client": "^5.20.0",
+    "tsx": "^4.19.1"
+  }
+}
