@@ -64,6 +64,7 @@ select
   suppressed
 from mv_sessions_daily
 where metric_date >= current_date - interval '13 day'
+  and metric_date <= current_date
 order by metric_date, game_id;
         `,
       },
@@ -85,6 +86,7 @@ select
   bool_or(suppressed) as suppressed
 from mv_character_popularity
 where metric_date >= current_date - interval '6 day'
+  and metric_date <= current_date
 group by game_id, character_id
 order by game_id, pick_count desc, character_id;
         `,
@@ -110,6 +112,7 @@ select
   last_refreshed_at
 from retention_cohorts
 where cohort_date >= current_date - interval '56 day'
+  and cohort_date <= current_date
 order by cohort_date, game_id;
         `,
       },
@@ -132,6 +135,7 @@ select
 from mv_sessions_daily
 where game_id = 'mythtag'
   and metric_date >= current_date - interval '13 day'
+  and metric_date <= current_date
 order by metric_date;
         `,
       },
@@ -153,6 +157,7 @@ select
 from mv_character_popularity
 where game_id = 'mythtag'
   and metric_date >= current_date - interval '6 day'
+  and metric_date <= current_date
 group by character_id
 order by pick_count desc, character_id;
         `,
