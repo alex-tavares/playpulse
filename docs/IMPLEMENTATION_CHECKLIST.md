@@ -12,9 +12,9 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository now has the MVP design foundation plus the major implementation slices needed for a full local demo: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, the analytics API in `apps/analytics-api`, and the Next.js dashboard in `apps/dashboard`.
+The repository now has the MVP design foundation plus every major product slice needed for a real local telemetry loop: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, the analytics API in `apps/analytics-api`, the Next.js dashboard in `apps/dashboard`, and the Godot SDK plus local validation flow under `sdk/godot` and `scripts/godot`.
 
-The Godot SDK and the final release-hardening work still remain. The raw write path, warehouse derivation layer, analytics read layer, and dashboard UI are now in place, but the client SDK and the finish-line verification work are still implementation tasks.
+The main remaining work is release hardening and finish-line verification. The raw write path, warehouse derivation layer, analytics read layer, dashboard UI, and Godot client SDK are now in place for local end-to-end validation.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -104,20 +104,21 @@ The Godot SDK and the final release-hardening work still remain. The raw write p
 
 ## Phase 7 - Godot SDK MVP
 
-- [ ] Create the SDK workspace or location and basic project structure
-- [ ] Implement `configure`
-- [ ] Implement `track`
-- [ ] Implement queueing and batch flush behavior
-- [ ] Implement offline persistence and replay
-- [ ] Implement the HMAC signing contract
-- [ ] Implement consent enable and disable behavior
-- [ ] Implement retry, backoff, and failure handling
-- [ ] Implement shutdown flush behavior
-- [ ] Instrument a sample Godot integration path for demo use
-- [ ] Add tests or validation coverage for envelope generation, queue behavior, signing, and consent logic
+- [x] Create the SDK workspace or location and basic project structure
+- [x] Implement `configure`
+- [x] Implement `track`
+- [x] Implement queueing and batch flush behavior
+- [x] Implement offline persistence and replay
+- [x] Implement the HMAC signing contract
+- [x] Implement consent enable and disable behavior
+- [x] Implement retry, backoff, and failure handling
+- [x] Implement shutdown flush behavior
+- [x] Instrument a sample Godot integration path for demo use
+- [x] Add tests or validation coverage for envelope generation, queue behavior, signing, and consent logic
 
 ## Phase 8 - Observability, Security, And Ops Readiness
 
+- [x] Add a local Metabase internal-analysis stack with warehouse-first and debug-only data connections
 - [ ] Add metrics for ingest, analytics, and materialized-view refresh aligned with RFC-005
 - [ ] Add request IDs and trace propagation
 - [ ] Ensure log fields align with RFC-005 and privacy requirements

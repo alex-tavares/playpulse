@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** Ingest MVP, warehouse derivations, analytics API, and the dashboard MVP are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation are in place; the Godot SDK and release-hardening phases remain.
+> **Project status:** Ingest MVP, warehouse derivations, analytics API, dashboard MVP, and the Godot SDK MVP are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, local Godot validation scripts, and CI validation are in place; release-hardening phases remain.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
@@ -13,6 +13,7 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - **Godot SDK**: lightweight client for structured event capture.
 - **Ingestion and Analytics API**: Node/TypeScript services backed by Postgres for storage, querying, and privacy controls.
 - **Dashboard**: Next.js 14 front end with shadcn/ui and Recharts for live and demo visualizations.
+- **Internal BI**: Metabase for exploratory analysis, QA checks, and ad hoc warehouse queries.
 
 ## Progress Snapshot
 **What exists today**
@@ -23,11 +24,13 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - The warehouse worker in `apps/warehouse-worker`, including date-dimension seeding, demo-data seeding, and refresh flows for sessions, character popularity, retention cohorts, and KPI summary views.
 - The analytics API in `apps/analytics-api`, including health, summary, daily sessions, character popularity, and private retention read endpoints backed by the warehouse structures.
 - The dashboard in `apps/dashboard`, including the public metrics view, the private retention demo gate, loading and suppression states, and real analytics API integration.
+- The Godot SDK under `sdk/godot/playpulse`, including the `PlayPulse` autoload addon, standalone SDK tests, and MythTag validation helpers under `scripts/godot`.
 - Local Postgres development workflow via `docker compose` and CI validation for lint, typecheck, and tests.
+- Local Metabase workflow for internal analysis and warehouse exploration.
 
 **Next milestones**
-- Implement the Godot SDK and end-to-end sample integration path.
 - Add the remaining observability and deployment readiness work around the backend services.
+- Close the final end-to-end release checks from SDK to dashboard.
 
 ## Repository Layout
 ```text
@@ -52,8 +55,10 @@ The repository now includes runnable backend services, a seeded warehouse flow, 
 - Enable the pinned package manager with `corepack enable`, then install dependencies with `pnpm install`.
 - Workspaces under `apps/*` and `packages/*` share the root toolchain and configs.
 - Start local Postgres with `pnpm db:up`; stop it with `pnpm db:down`; inspect logs with `pnpm db:logs`.
+- Start local Postgres plus Metabase with `pnpm db:up:bi`; inspect Metabase logs with `pnpm db:logs:bi`.
 - Generate the Prisma client with `pnpm db:generate`, then apply the migration with `pnpm db:migrate` before running backend integration tests or the services locally.
 - Use `PLAYPULSE_DATABASE_URL=postgresql://playpulse:playpulse@localhost:5432/playpulse` for local backend work.
+- Use Metabase at `http://localhost:3001` for internal exploratory analysis; the bootstrap flow creates a warehouse-first connection and a separate debug connection for raw events.
 - Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` for the current validation baseline.
 - Build shared workspaces with `pnpm build`.
 - Run the ingest service locally with `pnpm --filter @playpulse/ingest dev`.
@@ -61,8 +66,15 @@ The repository now includes runnable backend services, a seeded warehouse flow, 
 - Run the dashboard locally with `pnpm --filter @playpulse/dashboard dev`.
 - Seed the demo warehouse data with `pnpm db:seed-demo`, then rebuild derived structures with `pnpm db:refresh`.
 - Rebuild only retention cohorts with `pnpm db:refresh:retention` when validating retention-specific changes.
+- Rerun `pnpm metabase:bootstrap` if you need to recreate the local Metabase collections, saved questions, or starter dashboards.
 - Use the dashboard defaults `PLAYPULSE_DASHBOARD_ANALYTICS_BASE_URL=http://localhost:4002`, `PLAYPULSE_DASHBOARD_PRIVATE_ACCESS_CODE=playpulse-demo-access`, and `PLAYPULSE_DASHBOARD_PRIVATE_API_BEARER_TOKEN=playpulse-local-private-token` for the local demo path.
 - Individual workspace scripts can be executed with filters, for example `pnpm --filter @playpulse/schemas test`.
+- Run the standalone Godot SDK test suite with `powershell -ExecutionPolicy Bypass -File scripts/godot/Run-SdkTests.ps1`.
+- Install the local MythTag validation bridge with `powershell -ExecutionPolicy Bypass -File scripts/godot/Install-MythTagPlayPulseBridge.ps1`.
+- Launch MythTag with the SDK bridge and local env defaults via `powershell -ExecutionPolicy Bypass -File scripts/godot/Start-MythTagWithPlayPulse.ps1`. On Windows with ingest running in WSL, use `http://127.0.0.1:4001` rather than `http://localhost:4001` for the Godot ingest base URL.
+- Remove the temporary MythTag bridge and addon install with `powershell -ExecutionPolicy Bypass -File scripts/godot/Remove-MythTagPlayPulseBridge.ps1 -RemoveAddon`.
+- For end-to-end local validation, run ingest with an API key config that matches the bridge defaults, for example `PLAYPULSE_INGEST_API_KEYS_JSON='[{\"key_id\":\"mythtag-local-key\",\"signing_secret\":\"mythtag-local-secret\",\"game_id\":\"mythtag\",\"enabled\":true}]' pnpm --filter @playpulse/ingest dev`.
+- For internal analysis, prefer Metabase on the warehouse structures (`mv_metrics_summary_current`, `mv_sessions_daily`, `mv_character_popularity`, `retention_cohorts`) and use the separate debug connection only when you need `events_raw`.
 
 ## Roadmap Themes
 1. End-to-end telemetry loop from Godot sample game to analytics API.

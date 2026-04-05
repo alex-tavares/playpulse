@@ -16,5 +16,22 @@ services:
     volumes:
       - playpulse-postgres-data:/var/lib/postgresql/data
 
+  metabase:
+    image: metabase/metabase:latest
+    container_name: playpulse-metabase
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+      MB_SITE_URL: http://localhost:${PLAYPULSE_METABASE_PORT:-3001}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '${PLAYPULSE_METABASE_PORT:-3001}:3000'
+    volumes:
+      - playpulse-metabase-data:/metabase-data
+
 volumes:
   playpulse-postgres-data:
+  playpulse-metabase-data:
