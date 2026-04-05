@@ -5,6 +5,22 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: playpulse
+          POSTGRES_PASSWORD: playpulse
+          POSTGRES_USER: playpulse
+        options: >-
+          --health-cmd "pg_isready -U playpulse -d playpulse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    env:
+      PLAYPULSE_DATABASE_URL: postgresql://playpulse:playpulse@localhost:5432/playpulse
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -13,6 +29,7 @@ jobs:
           cache: 'pnpm'
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

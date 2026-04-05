@@ -12,9 +12,9 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository now has the MVP design foundation plus the shared implementation baseline: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, and real CI validation for lint, typecheck, and tests. Placeholder app directories and per-app `tsconfig.json` files still exist for `ingest`, `analytics-api`, and `dashboard`.
+The repository now has the MVP design foundation plus the first runnable backend slice: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, and the first ingest service implementation in `apps/ingest`.
 
-There is still no production service or UI code in `apps/`, and the warehouse, Prisma schema, backend implementations, and dashboard application remain to be built. The shared packages and tooling foundation are in place, but Phase 3 onward is still implementation work.
+The warehouse derivations, analytics read APIs, dashboard application, and Godot SDK still remain to be built. The raw write path and shared tooling foundation are in place, but the rest of the product stack is still implementation work.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -46,24 +46,24 @@ There is still no production service or UI code in `apps/`, and the warehouse, P
 
 ## Phase 3 - Ingest Service MVP
 
-- [ ] Scaffold `apps/ingest/src/{routes,controllers,services,repos,lib,config}`
-- [ ] Implement the `POST /events` route
-- [ ] Validate batched payloads with shared schemas
-- [ ] Enforce the 1 MB body limit
-- [ ] Implement API key and HMAC verification using the raw-body signing contract
-- [ ] Implement timestamp window validation and nonce replay detection
-- [ ] Implement per-IP and per-key rate limiting
-- [ ] Implement structured request logging without request bodies
-- [ ] Implement the standard JSON error envelope
-- [ ] Persist accepted events into Postgres `events_raw`
-- [ ] Expose a health endpoint and minimal service startup path
-- [ ] Add unit tests for auth and security helpers
-- [ ] Add integration tests for valid batch, invalid schema, bad signature, replay, rate limit, and payload too large
+- [x] Scaffold `apps/ingest/src/{routes,controllers,services,repos,lib,config}`
+- [x] Add the initial Prisma schema and database setup for `events_raw`
+- [x] Implement the `POST /events` route
+- [x] Validate batched payloads with shared schemas
+- [x] Enforce the 1 MB body limit
+- [x] Implement API key and HMAC verification using the raw-body signing contract
+- [x] Implement timestamp window validation and nonce replay detection
+- [x] Implement per-IP and per-key rate limiting
+- [x] Implement structured request logging without request bodies
+- [x] Implement the standard JSON error envelope
+- [x] Persist accepted events into Postgres `events_raw`
+- [x] Expose a health endpoint and minimal service startup path
+- [x] Add unit tests for auth and security helpers
+- [x] Add integration tests for valid batch, invalid schema, bad signature, replay, rate limit, and payload too large
 
 ## Phase 4 - Warehouse And Derived Data
 
-- [ ] Add Prisma schema and initial database setup for `events_raw`
-- [ ] Create the raw-event storage model aligned with the ERD and RFC-008
+- [x] Create the raw-event storage model aligned with the ERD and RFC-008
 - [ ] Create `dim_dates`
 - [ ] Implement refreshable derived structures for sessions per day
 - [ ] Implement refreshable derived structures for character popularity

@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PLAYPULSE_DATABASE_URL")
+}
+
+model EventRaw {
+  eventId          String    @id @db.Uuid @map("event_id")
+  receivedAt       DateTime  @db.Timestamptz(6) @map("received_at")
+  occurredAt       DateTime  @db.Timestamptz(6) @map("occurred_at")
+  apiKeyId         String    @map("api_key_id")
+  gameId           String    @map("game_id")
+  sessionId        String    @db.Uuid @map("session_id")
+  playerIdHash     String    @map("player_id_hash")
+  eventName        String    @map("event_name")
+  schemaVersion    String    @map("schema_version")
+  gameVersion      String    @map("game_version")
+  buildId          String    @map("build_id")
+  platform         String
+  locale           String?
+  consentAnalytics Boolean   @map("consent_analytics")
+  propsJsonb       Json      @map("props_jsonb")
+  ingestSource     String    @default("godot_sdk") @map("ingest_source")
+  insertedAt       DateTime  @default(now()) @db.Timestamptz(6) @map("inserted_at")
+
+  @@index([receivedAt], map: "idx_events_raw_received_at")
+  @@index([gameId, eventName, occurredAt], map: "idx_events_raw_game_event_occurred")
+  @@index([playerIdHash, occurredAt], map: "idx_events_raw_player_occurred")
+  @@map("events_raw")
+}

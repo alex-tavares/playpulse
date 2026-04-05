@@ -138,7 +138,7 @@ describe('schemas', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects invalid major schema versions', () => {
+  it('accepts valid schema_version syntax regardless of major version', () => {
     const result = sessionStartEventSchema.safeParse({
       event_id: '7f4c9e4d-5f3c-4e51-9dc8-6e0a9f0c1234',
       event_name: 'session_start',
@@ -158,7 +158,7 @@ describe('schemas', () => {
       },
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('rejects batches over 10 events', () => {

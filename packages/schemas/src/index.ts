@@ -12,7 +12,7 @@ const maxByteLength = <T extends z.ZodTypeAny>(schema: T, maxBytes: number, labe
   });
 
 const snakeCaseSchema = z.string().regex(/^[a-z][a-z0-9_]*$/, 'must be snake_case');
-const schemaVersionSchema = z.string().regex(/^1\.\d+$/, 'must use major version 1');
+const schemaVersionSchema = z.string().regex(/^\d+\.\d+$/, 'must use major.minor version format');
 const localeSchema = z.string().min(2).max(8);
 const gameVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/, 'must be semver');
 const buildIdSchema = z.string().min(1).max(16);

@@ -1,6 +1,6 @@
 # Environment Configuration
 
-Set these variables in deployment environments to align with RFC-003 and RFC-004 targets. Values shown are the current documented defaults used by the shared config package; adjust them only with the corresponding docs or RFC updates.
+Set these variables in deployment environments to align with RFC-003 and RFC-004 targets. Values shown are the current documented defaults used by the shared config package and the ingest app config; adjust them only with the corresponding docs or RFC updates.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -18,5 +18,10 @@ Set these variables in deployment environments to align with RFC-003 and RFC-004
 | `PLAYPULSE_REPLAY_WINDOW_SECONDS` | `300` | Replay protection window (seconds). |
 | `PLAYPULSE_STORAGE_RETENTION_DAYS` | `90` | Raw events retention horizon before archival. |
 | `PLAYPULSE_DATABASE_URL` | `postgresql://playpulse:playpulse@localhost:5432/playpulse` | Local and default service database connection for future backend phases. |
+| `PLAYPULSE_INGEST_PORT` | `4001` | Bind port for the ingest service. |
+| `PLAYPULSE_INGEST_HOST` | `0.0.0.0` | Bind host for the ingest service. |
+| `PLAYPULSE_INGEST_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS allow-list for ingest requests. |
+| `PLAYPULSE_INGEST_TRUST_PROXY` | `false` | Whether ingest should trust proxy forwarding headers when resolving client IPs. |
+| `PLAYPULSE_INGEST_API_KEYS_JSON` | `[]` | JSON array of enabled ingest credentials shaped as `{ "key_id", "signing_secret", "game_id", "enabled" }`. |
 
 > NOTE: update these values via infrastructure configuration; code should read from environment with documented defaults.

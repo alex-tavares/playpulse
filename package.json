@@ -5,11 +5,13 @@
   "scripts": {
     "build": "corepack pnpm -r --if-present run build",
     "db:down": "docker compose down",
+    "db:generate": "corepack pnpm exec prisma generate",
     "db:logs": "docker compose logs -f postgres",
+    "db:migrate": "corepack pnpm exec prisma migrate deploy",
     "db:up": "docker compose up -d postgres",
     "dev": "corepack pnpm -r --if-present run dev",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx,.cjs,.mjs",
-    "test": "vitest run",
+    "test": "corepack pnpm exec prisma generate && corepack pnpm exec prisma migrate deploy && vitest run",
     "test:watch": "vitest",
     "typecheck": "corepack pnpm -r --if-present run typecheck"
   },
@@ -17,6 +19,9 @@
     "apps/*",
     "packages/*"
   ],
+  "dependencies": {
+    "@prisma/client": "^5.20.0"
+  },
   "devDependencies": {
     "@types/node": "^20.16.5",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
@@ -24,6 +29,7 @@
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.2.5",
+    "prisma": "^5.20.0",
     "supertest": "^7.0.0",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"

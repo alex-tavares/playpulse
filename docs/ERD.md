@@ -1,4 +1,4 @@
-# ERD — Draft Plan
+# ERD
 
 ```mermaid
 erDiagram
@@ -14,10 +14,15 @@ erDiagram
         timestamptz occurred_at
         text api_key_id
         text game_id
+        text game_version
+        text build_id
         uuid session_id
         text player_id_hash
         text event_name
         text schema_version
+        text platform
+        text locale
+        boolean consent_analytics
         jsonb props_jsonb
         text ingest_source
         timestamptz inserted_at
@@ -57,10 +62,10 @@ erDiagram
     }
 ```
 
-*Columns subject to change when schemas are finalized.*
-
 ## Notes
-- `events_raw` remains append-only with 90-day retention.  
-- Materialized views refresh every 5 minutes (sessions/popularity) or nightly (retention).  
-- Zero-fill performed via `dim_dates` joins; suppressed buckets flagged in derived views.  
+- Phase 3 includes the initial Prisma schema and migration for `events_raw`.
+- `events_raw` remains append-only with 90-day retention.
+- MVP ingest persists `ingest_source = 'godot_sdk'` for accepted SDK batches.
+- Materialized views refresh every 5 minutes (sessions/popularity) or nightly (retention).
+- Zero-fill performed via `dim_dates` joins; suppressed buckets flagged in derived views.
 - Additional dimensions (characters metadata, etc.) can be linked later.
