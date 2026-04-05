@@ -47,6 +47,12 @@ Implementation has not started yet; we're still firming up the design docs.
 - Clone the repo if you want to review or contribute to planning materials.
 - Follow updates in the decision log and RFCs; expect rapid iteration until we tag the first alpha release.
 
+## Development Setup
+- Install dependencies with `pnpm install`. Workspaces under `apps/*` and `packages/*` share the root toolchain and configs.
+- TypeScript projects extend the shared options in `tsconfig.base.json`; scaffold new services by copying one of the placeholder `tsconfig.json` files.
+- Run `pnpm lint` for repo-wide ESLint checks and `pnpm typecheck` to verify TypeScript types without emitting build output.
+- Individual workspace scripts can be executed with filters, e.g. `pnpm --filter analytics-api dev`, once service-specific packages land.
+
 ## Roadmap Themes
 1. End-to-end telemetry loop from Godot sample game to analytics API.
 2. Privacy-first dashboards with k-anonymized public and authenticated views.
