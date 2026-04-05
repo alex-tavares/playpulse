@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** Ingest MVP, warehouse derivations, and the analytics API baseline are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation are in place; dashboard and SDK implementation are next.
+> **Project status:** Ingest MVP, warehouse derivations, analytics API, and the dashboard MVP are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation are in place; the Godot SDK and release-hardening phases remain.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
@@ -22,14 +22,10 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - The first runnable app in `apps/ingest`, including `POST /events`, `GET /health`, structured logging, auth checks, and Postgres-backed raw event persistence.
 - The warehouse worker in `apps/warehouse-worker`, including date-dimension seeding, demo-data seeding, and refresh flows for sessions, character popularity, retention cohorts, and KPI summary views.
 - The analytics API in `apps/analytics-api`, including health, summary, daily sessions, character popularity, and private retention read endpoints backed by the warehouse structures.
+- The dashboard in `apps/dashboard`, including the public metrics view, the private retention demo gate, loading and suppression states, and real analytics API integration.
 - Local Postgres development workflow via `docker compose` and CI validation for lint, typecheck, and tests.
 
-**Currently shaping**
-- Building the dashboard application on top of the ingest, warehouse, and analytics service layers now present in the repo.
-- Keeping the shared schemas, config parsing, test helpers, local Postgres workflow, and CI baseline as the foundation for the dashboard and SDK phases.
-
 **Next milestones**
-- Land the dashboard shell and sample dataset flow for local demos.
 - Implement the Godot SDK and end-to-end sample integration path.
 - Add the remaining observability and deployment readiness work around the backend services.
 
@@ -37,7 +33,7 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 ```text
 apps/
   analytics-api/  # Express analytics read API backed by warehouse-derived structures
-  dashboard/      # Placeholder for Next.js dashboard experience
+  dashboard/      # Next.js 14 dashboard wired to the real analytics API
   ingest/         # Express ingest service with auth, validation, and raw-event persistence
   warehouse-worker/ # Refresh and seed commands for derived warehouse structures
 
@@ -48,7 +44,7 @@ packages/         # Shared schemas, config parsing, and test helpers
 ```
 
 ## Getting Started (Pre-alpha)
-The repository now includes the first runnable backend service plus the shared implementation foundation.
+The repository now includes runnable backend services, a seeded warehouse flow, and the first dashboard experience.
 - Clone the repo to review the docs or continue warehouse, analytics, or SDK work.
 - Follow the implementation checklist and RFCs for the current delivery sequence.
 
@@ -62,8 +58,10 @@ The repository now includes the first runnable backend service plus the shared i
 - Build shared workspaces with `pnpm build`.
 - Run the ingest service locally with `pnpm --filter @playpulse/ingest dev`.
 - Run the analytics API locally with `pnpm --filter @playpulse/analytics-api dev`.
+- Run the dashboard locally with `pnpm --filter @playpulse/dashboard dev`.
 - Seed the demo warehouse data with `pnpm db:seed-demo`, then rebuild derived structures with `pnpm db:refresh`.
 - Rebuild only retention cohorts with `pnpm db:refresh:retention` when validating retention-specific changes.
+- Use the dashboard defaults `PLAYPULSE_DASHBOARD_ANALYTICS_BASE_URL=http://localhost:4002`, `PLAYPULSE_DASHBOARD_PRIVATE_ACCESS_CODE=playpulse-demo-access`, and `PLAYPULSE_DASHBOARD_PRIVATE_API_BEARER_TOKEN=playpulse-local-private-token` for the local demo path.
 - Individual workspace scripts can be executed with filters, for example `pnpm --filter @playpulse/schemas test`.
 
 ## Roadmap Themes

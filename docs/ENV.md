@@ -1,6 +1,6 @@
 # Environment Configuration
 
-Set these variables in deployment environments to align with RFC-003 and RFC-004 targets. Values shown are the current documented defaults used by the shared config package and the ingest app config; adjust them only with the corresponding docs or RFC updates.
+Set these variables in deployment environments to align with RFC-003 and RFC-004 targets. Values shown are the current documented defaults used by the shared config package plus the ingest, analytics, warehouse, and dashboard app configs; adjust them only with the corresponding docs or RFC updates.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -28,5 +28,8 @@ Set these variables in deployment environments to align with RFC-003 and RFC-004
 | `PLAYPULSE_ANALYTICS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS allow-list for analytics requests. |
 | `PLAYPULSE_ANALYTICS_TRUST_PROXY` | `false` | Whether analytics should trust proxy forwarding headers when resolving client IPs. |
 | `PLAYPULSE_ANALYTICS_PRIVATE_BEARER_TOKEN` | `playpulse-local-private-token` | Temporary bearer token used to protect private retention reads before dashboard auth exists. |
+| `PLAYPULSE_DASHBOARD_ANALYTICS_BASE_URL` | `http://localhost:4002` | Server-only base URL the Next.js dashboard uses to query the analytics API. |
+| `PLAYPULSE_DASHBOARD_PRIVATE_ACCESS_CODE` | `playpulse-demo-access` | Demo access code used by the dashboard sign-in form to mint an HttpOnly private-insights session. |
+| `PLAYPULSE_DASHBOARD_PRIVATE_API_BEARER_TOKEN` | `playpulse-local-private-token` | Server-only bearer token the dashboard uses when calling the private retention endpoint. |
 
 > NOTE: update these values via infrastructure configuration; code should read from environment with documented defaults.

@@ -12,9 +12,9 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository now has the MVP design foundation plus the first backend implementation slices: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, and the analytics API in `apps/analytics-api`.
+The repository now has the MVP design foundation plus the major implementation slices needed for a full local demo: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, the analytics API in `apps/analytics-api`, and the Next.js dashboard in `apps/dashboard`.
 
-The dashboard application and Godot SDK still remain to be built. The raw write path, warehouse derivation layer, and analytics read layer are now in place, but the rest of the product stack is still implementation work.
+The Godot SDK and the final release-hardening work still remain. The raw write path, warehouse derivation layer, analytics read layer, and dashboard UI are now in place, but the client SDK and the finish-line verification work are still implementation tasks.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -89,18 +89,18 @@ The dashboard application and Godot SDK still remain to be built. The raw write 
 
 ## Phase 6 - Dashboard MVP
 
-- [ ] Scaffold the Next.js dashboard app shell
-- [ ] Implement the global layout and navigation from RFC-006
-- [ ] Implement the public metrics page
-- [ ] Implement the sessions-per-day chart card
-- [ ] Implement the character-popularity chart card
-- [ ] Implement the private insights page
-- [ ] Implement the retention chart card
-- [ ] Implement loading, empty, and error states
-- [ ] Implement suppression UX exactly as documented
-- [ ] Connect the dashboard to the analytics API or seeded demo service
-- [ ] Add a sample or demo dataset flow for local preview
-- [ ] Add UI smoke checks for public/private pages and chart-state rendering
+- [x] Scaffold the Next.js dashboard app shell
+- [x] Implement the global layout and navigation from RFC-006
+- [x] Implement the public metrics page
+- [x] Implement the sessions-per-day chart card
+- [x] Implement the character-popularity chart card
+- [x] Implement the private insights page
+- [x] Implement the retention chart card
+- [x] Implement loading, empty, and error states
+- [x] Implement suppression UX exactly as documented
+- [x] Connect the dashboard to the analytics API or seeded demo service
+- [x] Add a sample or demo dataset flow for local preview
+- [x] Add UI smoke checks for public/private pages and chart-state rendering
 
 ## Phase 7 - Godot SDK MVP
 

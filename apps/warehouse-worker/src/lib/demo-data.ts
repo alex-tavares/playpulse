@@ -62,6 +62,12 @@ const demoConfigs: DemoGameConfig[] = [
 const createPlayerHash = (seed: string) =>
   createHash('sha256').update(seed, 'utf8').digest('hex');
 
+const startOfUtcWeek = (value: Date) => {
+  const result = startOfUtcDay(value);
+  const dayOffset = (result.getUTCDay() + 6) % 7;
+  return addUtcDays(result, -dayOffset);
+};
+
 const pickCharacter = (config: DemoGameConfig, dayOffset: number, playerIndex: number, pickIndex: number) => {
   if (playerIndex < 3 && dayOffset % 4 === 0 && pickIndex === 0) {
     return config.rareCharacters[playerIndex % config.rareCharacters.length]!;
@@ -87,6 +93,26 @@ const buildBaseOverrides = (
   player_id_hash: createPlayerHash(playerSeed),
   session_id: sessionId,
 });
+
+const pushHistoricalBootstrapSessionStart = (
+  output: DemoSeedEvent[],
+  config: DemoGameConfig,
+  occurredAt: Date,
+  playerSeed: string
+) => {
+  output.push({
+    apiKeyId: config.apiKeyId,
+    event: createSessionStartEvent({
+      ...buildBaseOverrides(config, occurredAt, playerSeed, randomUUID(), true),
+      event_id: randomUUID(),
+      properties: {
+        connection_mode: 'online',
+        launch_reason: 'fresh_launch',
+        timezone_offset_min: config.gameId === 'mythtag' ? -180 : -240,
+      },
+    }),
+  });
+};
 
 const pushSessionTriplet = (
   output: DemoSeedEvent[],
@@ -200,8 +226,31 @@ const pushSessionTriplet = (
 export const generateDemoSeedEvents = (now: Date) => {
   const output: DemoSeedEvent[] = [];
   const today = startOfUtcDay(now);
+  const currentWeek = startOfUtcWeek(today);
 
   for (const config of demoConfigs) {
+    const activePoolSize = Math.max(...config.dailyPlayers);
+    const bootstrapStartDate = addUtcDays(currentWeek, -84);
+    const bootstrapDate = new Date(
+      Date.UTC(
+        bootstrapStartDate.getUTCFullYear(),
+        bootstrapStartDate.getUTCMonth(),
+        bootstrapStartDate.getUTCDate(),
+        10,
+        0,
+        0
+      )
+    );
+
+    for (let playerIndex = 0; playerIndex < activePoolSize; playerIndex += 1) {
+      pushHistoricalBootstrapSessionStart(
+        output,
+        config,
+        new Date(bootstrapDate.getTime() + playerIndex * 60_000),
+        `active:${config.gameId}:${playerIndex}`
+      );
+    }
+
     config.dailyPlayers.forEach((playerCount, index) => {
       const dayOffset = config.dailyPlayers.length - 1 - index;
       const dayDate = addUtcDays(today, -dayOffset);
@@ -221,8 +270,9 @@ export const generateDemoSeedEvents = (now: Date) => {
               )
             );
         const durationSeconds = 1200 + ((playerIndex + dayOffset * 17) % 2400);
-        const playerSeed = `daily:${config.gameId}:${dayOffset}:${playerIndex}`;
-        const consentAnalytics = !(playerCount >= 24 && playerIndex % 12 === 0);
+        const playerSeed = `active:${config.gameId}:${playerIndex}`;
+        const consentAnalytics =
+          !(playerCount >= 24 && playerIndex % 12 === 0 && dayOffset % 3 === 0);
 
         pushSessionTriplet(
           output,
@@ -239,7 +289,10 @@ export const generateDemoSeedEvents = (now: Date) => {
     });
 
     config.weeklyCohortSizes.forEach((cohortSize, cohortIndex) => {
-      const cohortDate = addUtcDays(today, -(56 - cohortIndex * 7));
+      const cohortDate = addUtcDays(
+        currentWeek,
+        -((config.weeklyCohortSizes.length - 1 - cohortIndex) * 7)
+      );
       const d1Retained = config.weeklyCohortD1[cohortIndex] ?? 0;
       const d7Retained = config.weeklyCohortD7[cohortIndex] ?? 0;
 
@@ -275,7 +328,7 @@ export const generateDemoSeedEvents = (now: Date) => {
             output,
             config,
             new Date(baseEndAt.getTime() + 24 * 60 * 60 * 1000),
-            `${baseSeed}:d1`,
+            baseSeed,
             randomUUID(),
             true,
             1000 + ((playerIndex + cohortIndex) % 1200),
@@ -290,7 +343,7 @@ export const generateDemoSeedEvents = (now: Date) => {
             output,
             config,
             new Date(baseEndAt.getTime() + 7 * 24 * 60 * 60 * 1000),
-            `${baseSeed}:d7`,
+            baseSeed,
             randomUUID(),
             true,
             900 + ((playerIndex + cohortIndex) % 1500),

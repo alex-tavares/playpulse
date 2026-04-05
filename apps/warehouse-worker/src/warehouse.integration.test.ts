@@ -572,6 +572,7 @@ describe('warehouse worker integration', () => {
       startDate: dateKey(firstWindowDate),
     });
     const retention = await repo.getRetentionCohorts();
+    const recentRetention = retention.filter((row) => row.cohortDate >= addUtcDays(today, -56));
 
     expect(seedResult.generatedCount).toBeGreaterThan(0);
     expect(seedResult.insertedCount).toBe(seedResult.generatedCount);
@@ -585,5 +586,8 @@ describe('warehouse worker integration', () => {
     expect(sessionsDaily.some((row) => row.suppressed)).toBe(true);
     expect(retention.filter((row) => row.gameId === 'mythclash').length).toBeGreaterThanOrEqual(8);
     expect(retention.filter((row) => row.gameId === 'mythtag').length).toBeGreaterThanOrEqual(8);
+    expect(recentRetention.some((row) => row.d1Retained > 0)).toBe(true);
+    expect(recentRetention.some((row) => row.d7Retained > 0)).toBe(true);
+    expect(Math.max(...recentRetention.map((row) => row.cohortSize))).toBeLessThan(20);
   });
 });
