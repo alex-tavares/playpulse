@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** Ingest MVP and the warehouse baseline are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation are in place; analytics, dashboard, and SDK implementation are next.
+> **Project status:** Ingest MVP, warehouse derivations, and the analytics API baseline are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation are in place; dashboard and SDK implementation are next.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
@@ -21,21 +21,22 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - Shared workspace tooling and foundation packages for schemas, config, and test helpers under `packages/`.
 - The first runnable app in `apps/ingest`, including `POST /events`, `GET /health`, structured logging, auth checks, and Postgres-backed raw event persistence.
 - The warehouse worker in `apps/warehouse-worker`, including date-dimension seeding, demo-data seeding, and refresh flows for sessions, character popularity, retention cohorts, and KPI summary views.
+- The analytics API in `apps/analytics-api`, including health, summary, daily sessions, character popularity, and private retention read endpoints backed by the warehouse structures.
 - Local Postgres development workflow via `docker compose` and CI validation for lint, typecheck, and tests.
 
 **Currently shaping**
-- Building analytics read APIs on top of the ingest write path and warehouse-derived structures.
+- Building the dashboard application on top of the ingest, warehouse, and analytics service layers now present in the repo.
 - Keeping the shared schemas, config parsing, test helpers, local Postgres workflow, and CI baseline as the foundation for the dashboard and SDK phases.
 
 **Next milestones**
-- Land the analytics API on top of the warehouse summary, sessions, popularity, and retention structures.
 - Land the dashboard shell and sample dataset flow for local demos.
 - Implement the Godot SDK and end-to-end sample integration path.
+- Add the remaining observability and deployment readiness work around the backend services.
 
 ## Repository Layout
 ```text
 apps/
-  analytics-api/  # Placeholder for telemetry + analytics services (implementation pending)
+  analytics-api/  # Express analytics read API backed by warehouse-derived structures
   dashboard/      # Placeholder for Next.js dashboard experience
   ingest/         # Express ingest service with auth, validation, and raw-event persistence
   warehouse-worker/ # Refresh and seed commands for derived warehouse structures
@@ -60,6 +61,7 @@ The repository now includes the first runnable backend service plus the shared i
 - Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` for the current validation baseline.
 - Build shared workspaces with `pnpm build`.
 - Run the ingest service locally with `pnpm --filter @playpulse/ingest dev`.
+- Run the analytics API locally with `pnpm --filter @playpulse/analytics-api dev`.
 - Seed the demo warehouse data with `pnpm db:seed-demo`, then rebuild derived structures with `pnpm db:refresh`.
 - Rebuild only retention cohorts with `pnpm db:refresh:retention` when validating retention-specific changes.
 - Individual workspace scripts can be executed with filters, for example `pnpm --filter @playpulse/schemas test`.

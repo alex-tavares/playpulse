@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  analyticsCharacterPopularityResponseSchema,
+  analyticsRetentionCohortsResponseSchema,
+  analyticsSessionsDailyResponseSchema,
+  analyticsSummaryResponseSchema,
   characterSelectedEventSchema,
   ingestEventsRequestSchema,
   matchEndEventSchema,
@@ -182,5 +186,95 @@ describe('schemas', () => {
     }));
 
     expect(ingestEventsRequestSchema.safeParse({ events }).success).toBe(false);
+  });
+
+  it('accepts a valid analytics summary response', () => {
+    const result = analyticsSummaryResponseSchema.safeParse({
+      data: {
+        game_id: 'all',
+        last_updated: '2025-09-20T18:25:00Z',
+        metrics: {
+          active_players: {
+            suppressed: false,
+            value: 184,
+          },
+          avg_session_length_s: {
+            suppressed: false,
+            value: 1338,
+          },
+          matches_today: {
+            suppressed: false,
+            value: 92,
+          },
+        },
+      },
+      request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts valid analytics sessions, popularity, and retention responses', () => {
+    expect(
+      analyticsSessionsDailyResponseSchema.safeParse({
+        data: {
+          days: 14,
+          game_id: 'all',
+          last_updated: '2025-09-20T18:25:00Z',
+          points: [
+            {
+              active_players: 54,
+              avg_session_length_s: 1275,
+              metric_date: '2025-09-07',
+              session_count: 86,
+              suppressed: false,
+            },
+          ],
+        },
+        request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+      }).success
+    ).toBe(true);
+
+    expect(
+      analyticsCharacterPopularityResponseSchema.safeParse({
+        data: {
+          characters: [
+            {
+              character_id: 'berserker',
+              pick_count: 144,
+              pick_ratio: 0.32,
+              suppressed: false,
+            },
+          ],
+          days: 7,
+          game_id: 'all',
+          last_updated: '2025-09-20T18:25:00Z',
+        },
+        request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+      }).success
+    ).toBe(true);
+
+    expect(
+      analyticsRetentionCohortsResponseSchema.safeParse({
+        data: {
+          cohorts: [
+            {
+              cohort_date: '2025-08-04',
+              cohort_size: 42,
+              d1_retained: 19,
+              d1_retention_pct: 0.45,
+              d1_suppressed: false,
+              d7_retained: null,
+              d7_retention_pct: 0.21,
+              d7_suppressed: true,
+            },
+          ],
+          game_id: 'all',
+          last_updated: '2025-09-20T18:25:00Z',
+          weeks: 8,
+        },
+        request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+      }).success
+    ).toBe(true);
   });
 });

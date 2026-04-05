@@ -43,6 +43,37 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.39)
 
+  apps/analytics-api:
+    dependencies:
+      '@playpulse/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@playpulse/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      '@playpulse/testkit':
+        specifier: workspace:*
+        version: link:../../packages/testkit
+      '@prisma/client':
+        specifier: ^5.20.0
+        version: 5.22.0(prisma@5.22.0)
+      express:
+        specifier: ^4.21.0
+        version: 4.22.1
+      pino:
+        specifier: ^9.4.0
+        version: 9.14.0
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
+
   apps/ingest:
     dependencies:
       '@playpulse/config':
@@ -73,6 +104,24 @@ importers:
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.25
+
+  apps/warehouse-worker:
+    dependencies:
+      '@playpulse/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@playpulse/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      '@playpulse/testkit':
+        specifier: workspace:*
+        version: link:../../packages/testkit
+      '@prisma/client':
+        specifier: ^5.20.0
+        version: 5.22.0(prisma@5.22.0)
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
 
   packages/config:
     dependencies:

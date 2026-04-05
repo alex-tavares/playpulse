@@ -12,9 +12,9 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository now has the MVP design foundation plus the first backend implementation slices: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, and the warehouse worker plus derived data flow in `apps/warehouse-worker`.
+The repository now has the MVP design foundation plus the first backend implementation slices: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, and the analytics API in `apps/analytics-api`.
 
-The analytics read APIs, dashboard application, and Godot SDK still remain to be built. The raw write path and warehouse derivation layer are now in place, but the rest of the product stack is still implementation work.
+The dashboard application and Godot SDK still remain to be built. The raw write path, warehouse derivation layer, and analytics read layer are now in place, but the rest of the product stack is still implementation work.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -76,16 +76,16 @@ The analytics read APIs, dashboard application, and Godot SDK still remain to be
 
 ## Phase 5 - Analytics API MVP
 
-- [ ] Scaffold `apps/analytics-api/src/{routes,controllers,services,repos,lib,config}`
-- [ ] Implement the sessions-per-day endpoint
-- [ ] Implement the active-players metric path
-- [ ] Implement the character-popularity endpoint
-- [ ] Implement the retention-cohorts endpoint
-- [ ] Enforce consent filtering on reads
-- [ ] Enforce k-anonymity and suppression behavior on public responses
-- [ ] Implement zero-fill response behavior for time series
-- [ ] Return stable JSON response shapes for dashboard consumers
-- [ ] Add integration tests for zero-fill, suppression, public/private behavior, and error cases
+- [x] Scaffold `apps/analytics-api/src/{routes,controllers,services,repos,lib,config}`
+- [x] Implement the sessions-per-day endpoint
+- [x] Implement the active-players metric path
+- [x] Implement the character-popularity endpoint
+- [x] Implement the retention-cohorts endpoint
+- [x] Enforce consent filtering on reads
+- [x] Enforce k-anonymity and suppression behavior on public responses
+- [x] Implement zero-fill response behavior for time series
+- [x] Return stable JSON response shapes for dashboard consumers
+- [x] Add integration tests for zero-fill, suppression, public/private behavior, and error cases
 
 ## Phase 6 - Dashboard MVP
 

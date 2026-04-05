@@ -23,5 +23,10 @@ Set these variables in deployment environments to align with RFC-003 and RFC-004
 | `PLAYPULSE_INGEST_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS allow-list for ingest requests. |
 | `PLAYPULSE_INGEST_TRUST_PROXY` | `false` | Whether ingest should trust proxy forwarding headers when resolving client IPs. |
 | `PLAYPULSE_INGEST_API_KEYS_JSON` | `[]` | JSON array of enabled ingest credentials shaped as `{ "key_id", "signing_secret", "game_id", "enabled" }`. |
+| `PLAYPULSE_ANALYTICS_PORT` | `4002` | Bind port for the analytics API service. |
+| `PLAYPULSE_ANALYTICS_HOST` | `0.0.0.0` | Bind host for the analytics API service. |
+| `PLAYPULSE_ANALYTICS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS allow-list for analytics requests. |
+| `PLAYPULSE_ANALYTICS_TRUST_PROXY` | `false` | Whether analytics should trust proxy forwarding headers when resolving client IPs. |
+| `PLAYPULSE_ANALYTICS_PRIVATE_BEARER_TOKEN` | `playpulse-local-private-token` | Temporary bearer token used to protect private retention reads before dashboard auth exists. |
 
 > NOTE: update these values via infrastructure configuration; code should read from environment with documented defaults.

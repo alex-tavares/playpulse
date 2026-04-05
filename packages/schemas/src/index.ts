@@ -19,7 +19,11 @@ const buildIdSchema = z.string().min(1).max(16);
 const lowerHex64Schema = z.string().regex(/^[a-f0-9]{64}$/, 'must be a 64-char lowercase hex string');
 
 export const gameIdSchema = z.enum(['mythclash', 'mythtag']);
+export const analyticsQueryGameIdSchema = z.enum(['mythclash', 'mythtag', 'all']);
 export const platformSchema = z.enum(['pc', 'mac', 'linux']);
+const requestIdSchema = z.string().min(1);
+const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must use YYYY-MM-DD format');
+const isoDateTimeSchema = z.string().datetime({ offset: true });
 
 export const eventEnvelopeSchema = z.object({
   event_id: z.string().uuid(),
@@ -131,6 +135,80 @@ export const ingestEventsRequestSchema = z.object({
   events: z.array(mvpEventSchema).min(1).max(10),
 });
 
+const analyticsMetricValueSchema = z.object({
+  suppressed: z.boolean(),
+  value: z.number().int().nonnegative().nullable(),
+});
+
+export const analyticsSummaryResponseSchema = z.object({
+  data: z.object({
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+    metrics: z.object({
+      active_players: analyticsMetricValueSchema,
+      avg_session_length_s: analyticsMetricValueSchema,
+      matches_today: analyticsMetricValueSchema,
+    }),
+  }),
+  request_id: requestIdSchema,
+});
+
+export const analyticsSessionsDailyResponseSchema = z.object({
+  data: z.object({
+    days: z.union([z.literal(7), z.literal(14), z.literal(30)]),
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+    points: z.array(
+      z.object({
+        active_players: z.number().int().nonnegative().nullable(),
+        avg_session_length_s: z.number().int().nonnegative().nullable(),
+        metric_date: isoDateSchema,
+        session_count: z.number().int().nonnegative().nullable(),
+        suppressed: z.boolean(),
+      })
+    ),
+  }),
+  request_id: requestIdSchema,
+});
+
+export const analyticsCharacterPopularityResponseSchema = z.object({
+  data: z.object({
+    characters: z.array(
+      z.object({
+        character_id: z.string().min(1).max(32),
+        pick_count: z.number().int().nonnegative().nullable(),
+        pick_ratio: z.number().min(0).max(1),
+        suppressed: z.boolean(),
+      })
+    ),
+    days: z.union([z.literal(7), z.literal(14)]),
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+  }),
+  request_id: requestIdSchema,
+});
+
+export const analyticsRetentionCohortsResponseSchema = z.object({
+  data: z.object({
+    cohorts: z.array(
+      z.object({
+        cohort_date: isoDateSchema,
+        cohort_size: z.number().int().nonnegative(),
+        d1_retained: z.number().int().nonnegative().nullable(),
+        d1_retention_pct: z.number().min(0).max(1),
+        d1_suppressed: z.boolean(),
+        d7_retained: z.number().int().nonnegative().nullable(),
+        d7_retention_pct: z.number().min(0).max(1),
+        d7_suppressed: z.boolean(),
+      })
+    ),
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+    weeks: z.number().int().min(1).max(8),
+  }),
+  request_id: requestIdSchema,
+});
+
 export type EventEnvelope = z.infer<typeof eventEnvelopeSchema>;
 export type SessionStartEvent = z.infer<typeof sessionStartEventSchema>;
 export type SessionEndEvent = z.infer<typeof sessionEndEventSchema>;
@@ -139,3 +217,12 @@ export type MatchEndEvent = z.infer<typeof matchEndEventSchema>;
 export type CharacterSelectedEvent = z.infer<typeof characterSelectedEventSchema>;
 export type MvpEvent = z.infer<typeof mvpEventSchema>;
 export type IngestEventsRequest = z.infer<typeof ingestEventsRequestSchema>;
+export type AnalyticsQueryGameId = z.infer<typeof analyticsQueryGameIdSchema>;
+export type AnalyticsSummaryResponse = z.infer<typeof analyticsSummaryResponseSchema>;
+export type AnalyticsSessionsDailyResponse = z.infer<typeof analyticsSessionsDailyResponseSchema>;
+export type AnalyticsCharacterPopularityResponse = z.infer<
+  typeof analyticsCharacterPopularityResponseSchema
+>;
+export type AnalyticsRetentionCohortsResponse = z.infer<
+  typeof analyticsRetentionCohortsResponseSchema
+>;
