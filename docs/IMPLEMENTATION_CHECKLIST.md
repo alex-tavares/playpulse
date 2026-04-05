@@ -23,17 +23,17 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [x] Placeholder app workspaces created
 - [x] Placeholder CI workflow committed
 
-## Phase 1 — Close Spec Gaps
+## Phase 1 - Close Spec Gaps
 
-- [ ] Finalize MVP event schemas from RFC-002 into `docs/EVENTS.md`
-- [ ] Define the ingest request and response contract in `docs/CONTRACTS/API_CONTRACT.md`
-- [ ] Define the first analytics endpoint contracts in `docs/CONTRACTS/API_CONTRACT.md`
-- [ ] Document stable error codes in one place, aligned with `docs/ERRORS.md`
-- [ ] Lock accepted `schema_version` policy for MVP
-- [ ] Confirm seeded demo dataset shape for MythClash and MythTag
-- [ ] Document unresolved RFC conflicts or implementation assumptions before coding starts
+- [x] Finalize MVP event schemas from RFC-002 into `docs/EVENTS.md`
+- [x] Define the ingest request and response contract in `docs/CONTRACTS/API_CONTRACT.md`
+- [x] Define the first analytics endpoint contracts in `docs/CONTRACTS/API_CONTRACT.md`
+- [x] Document stable error codes in one place, aligned with `docs/ERRORS.md`
+- [x] Lock accepted `schema_version` policy for MVP
+- [x] Confirm seeded demo dataset shape for MythClash and MythTag
+- [x] Document unresolved RFC conflicts or implementation assumptions before coding starts
 
-## Phase 2 — Shared Packages And Dev/Test Foundation
+## Phase 2 - Shared Packages And Dev/Test Foundation
 
 - [ ] Create `packages/schemas` with shared Zod schemas and exported types
 - [ ] Create a shared config or env parsing package or module for documented env vars
@@ -44,7 +44,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Wire lint, typecheck, and test to pass in the current scaffold
 - [ ] Replace the placeholder CI workflow with lint, typecheck, and test checks on PRs
 
-## Phase 3 — Ingest Service MVP
+## Phase 3 - Ingest Service MVP
 
 - [ ] Scaffold `apps/ingest/src/{routes,controllers,services,repos,lib,config}`
 - [ ] Implement the `POST /events` route
@@ -60,7 +60,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Add unit tests for auth and security helpers
 - [ ] Add integration tests for valid batch, invalid schema, bad signature, replay, rate limit, and payload too large
 
-## Phase 4 — Warehouse And Derived Data
+## Phase 4 - Warehouse And Derived Data
 
 - [ ] Add Prisma schema and initial database setup for `events_raw`
 - [ ] Create the raw-event storage model aligned with the ERD and RFC-008
@@ -74,7 +74,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Add DB tests or integration coverage for inserts and derivations
 - [ ] Document the local seed and refresh workflow
 
-## Phase 5 — Analytics API MVP
+## Phase 5 - Analytics API MVP
 
 - [ ] Scaffold `apps/analytics-api/src/{routes,controllers,services,repos,lib,config}`
 - [ ] Implement the sessions-per-day endpoint
@@ -87,7 +87,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Return stable JSON response shapes for dashboard consumers
 - [ ] Add integration tests for zero-fill, suppression, public/private behavior, and error cases
 
-## Phase 6 — Dashboard MVP
+## Phase 6 - Dashboard MVP
 
 - [ ] Scaffold the Next.js dashboard app shell
 - [ ] Implement the global layout and navigation from RFC-006
@@ -102,7 +102,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Add a sample or demo dataset flow for local preview
 - [ ] Add UI smoke checks for public/private pages and chart-state rendering
 
-## Phase 7 — Godot SDK MVP
+## Phase 7 - Godot SDK MVP
 
 - [ ] Create the SDK workspace or location and basic project structure
 - [ ] Implement `configure`
@@ -116,7 +116,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Instrument a sample Godot integration path for demo use
 - [ ] Add tests or validation coverage for envelope generation, queue behavior, signing, and consent logic
 
-## Phase 8 — Observability, Security, And Ops Readiness
+## Phase 8 - Observability, Security, And Ops Readiness
 
 - [ ] Add metrics for ingest, analytics, and materialized-view refresh aligned with RFC-005
 - [ ] Add request IDs and trace propagation
@@ -128,7 +128,7 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 - [ ] Align actual branch protection and CI expectations with the documented workflow
 - [ ] Confirm retention, backup, and restore procedures are represented in repo docs
 
-## Phase 9 — Finish Line
+## Phase 9 - Finish Line
 
 - [ ] Seed end-to-end demo data for MythClash and MythTag
 - [ ] Verify the end-to-end path from SDK to ingest to warehouse to analytics to dashboard
