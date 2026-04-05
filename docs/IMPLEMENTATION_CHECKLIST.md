@@ -12,16 +12,16 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository already has the design foundation for the MVP: project docs, ratified RFCs, agent guidance, and a bootstrapped pnpm workspace with shared TypeScript, ESLint, and Prettier configuration. Placeholder app directories and per-app `tsconfig.json` files exist for `ingest`, `analytics-api`, and `dashboard`.
+The repository now has the MVP design foundation plus the shared implementation baseline: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, and real CI validation for lint, typecheck, and tests. Placeholder app directories and per-app `tsconfig.json` files still exist for `ingest`, `analytics-api`, and `dashboard`.
 
-There is still no production app code in `apps/` or `packages/`, and there is no test runner, database setup, shared schema package, or service implementation yet. A placeholder GitHub Actions workflow exists, but it does not yet run real lint, typecheck, or test validation.
+There is still no production service or UI code in `apps/`, and the warehouse, Prisma schema, backend implementations, and dashboard application remain to be built. The shared packages and tooling foundation are in place, but Phase 3 onward is still implementation work.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
 - [x] pnpm workspace bootstrapped
 - [x] Shared TS/ESLint/Prettier root config added
 - [x] Placeholder app workspaces created
-- [x] Placeholder CI workflow committed
+- [x] CI workflow committed
 
 ## Phase 1 - Close Spec Gaps
 
@@ -35,14 +35,14 @@ There is still no production app code in `apps/` or `packages/`, and there is no
 
 ## Phase 2 - Shared Packages And Dev/Test Foundation
 
-- [ ] Create `packages/schemas` with shared Zod schemas and exported types
-- [ ] Create a shared config or env parsing package or module for documented env vars
-- [ ] Add a test runner and test scripts at the repo level
-- [ ] Add shared test fixtures and factories for telemetry payloads
-- [ ] Add a local Postgres dev workflow with `docker compose` and documented commands
-- [ ] Add baseline repo scripts for test, build, and filtered workspace execution
-- [ ] Wire lint, typecheck, and test to pass in the current scaffold
-- [ ] Replace the placeholder CI workflow with lint, typecheck, and test checks on PRs
+- [x] Create `packages/schemas` with shared Zod schemas and exported types
+- [x] Create a shared config or env parsing package or module for documented env vars
+- [x] Add a test runner and test scripts at the repo level
+- [x] Add shared test fixtures and factories for telemetry payloads
+- [x] Add a local Postgres dev workflow with `docker compose` and documented commands
+- [x] Add baseline repo scripts for test, build, and filtered workspace execution
+- [x] Wire lint, typecheck, and test to pass in the current scaffold
+- [x] Replace the placeholder CI workflow with lint, typecheck, and test checks on PRs
 
 ## Phase 3 - Ingest Service MVP
 

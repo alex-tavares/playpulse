@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: playpulse-postgres
+    environment:
+      POSTGRES_DB: playpulse
+      POSTGRES_PASSWORD: playpulse
+      POSTGRES_USER: playpulse
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U playpulse -d playpulse']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - '5432:5432'
+    volumes:
+      - playpulse-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  playpulse-postgres-data:

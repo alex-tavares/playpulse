@@ -3,10 +3,16 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Node",
+    "baseUrl": ".",
     "lib": ["ES2022"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@playpulse/config": ["packages/config/src/index.ts"],
+      "@playpulse/schemas": ["packages/schemas/src/index.ts"],
+      "@playpulse/testkit": ["packages/testkit/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
