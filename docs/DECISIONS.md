@@ -16,3 +16,5 @@
 - 2026-04-05: Finalized the first analytics contracts to include a dedicated KPI summary endpoint plus sessions/day, character popularity, and retention cohorts.
 - 2026-04-05: Locked MVP `schema_version` acceptance to major version `1` only, starting at `1.0`.
 - 2026-04-05: Moved custom event registration and quarantine flow to post-MVP scope.
+- 2026-04-05: Finalized the Godot SDK MVP config contract to require `ingest_base_url` alongside `api_key`, `signing_secret`, `game_id`, `game_version`, and `build_id`.
+- 2026-04-05: Landed the Godot SDK MVP as a GDScript addon/autoload in the PlayPulse repo with local PowerShell validation against MythTag; gzip transport and heartbeat diagnostics remain post-MVP.

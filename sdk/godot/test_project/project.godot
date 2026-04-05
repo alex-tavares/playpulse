@@ -1,0 +1,15 @@
+; Engine configuration file.
+; Minimal consumer project used to validate the PlayPulse Godot SDK.
+
+config_version=5
+
+[application]
+
+config/name="PlayPulse SDK Test Project"
+run/main_scene="res://tests/test_runner.tscn"
+config/features=PackedStringArray("4.4")
+config/icon="res://icon.svg"
+
+[autoload]
+
+PlayPulse="*res://addons/playpulse/playpulse.gd"
