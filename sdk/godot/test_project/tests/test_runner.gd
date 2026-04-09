@@ -22,6 +22,7 @@ func _run_tests() -> void:
 		_test_persistence_replay_on_configure,
 		_test_retry_schedule_ranges,
 		_test_shutdown_persists_unsent_queue,
+		_test_close_request_waits_for_flush_before_quit,
 	]
 
 	for test_callable in tests:
@@ -205,18 +206,41 @@ func _test_shutdown_persists_unsent_queue() -> void:
 	PlayPulse.configure(_base_config())
 	PlayPulse.track("session_start", _session_start_props())
 	PlayPulse.shutdown()
+	PlayPulse.shutdown()
 
 	var persistence := Persistence.new()
 	persistence.set_root_path(_test_root("shutdown"))
 	var persisted_events := persistence.load_events()
 	_assert(not persisted_events.is_empty(), "shutdown should leave unsent events persisted")
-	var has_session_end := false
+	var session_end_count := 0
 	for event in persisted_events:
 		if String(event["event_name"]) == "session_end":
-			has_session_end = true
-			break
+			session_end_count += 1
 
-	_assert(has_session_end, "shutdown should append a session_end event")
+	_assert(session_end_count == 1, "shutdown should append exactly one session_end event")
+
+
+func _test_close_request_waits_for_flush_before_quit() -> void:
+	var transport := _install_fake_transport(false)
+	transport.queue_response()
+	_reset_sdk("close-request")
+	PlayPulse._suppress_actual_quit_for_testing_only()
+	PlayPulse.configure(_base_config())
+	PlayPulse.track("session_start", _session_start_props())
+
+	PlayPulse._notification(NOTIFICATION_WM_CLOSE_REQUEST)
+	_assert(
+		PlayPulse._quit_count_snapshot_for_testing() == 0,
+		"quit should wait for the shutdown flush to finish"
+	)
+
+	transport.complete_next()
+	await get_tree().process_frame
+
+	_assert(
+		PlayPulse._quit_count_snapshot_for_testing() == 1,
+		"quit should resume after the shutdown flush completes"
+	)
 
 
 func _install_fake_transport(auto_complete: bool) -> Node:

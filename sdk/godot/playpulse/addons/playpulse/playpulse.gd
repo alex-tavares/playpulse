@@ -19,6 +19,7 @@ const PERSISTED_EVENT_BYTES_CAP := 2 * 1024 * 1024
 const SESSION_IDLE_SECONDS := 30 * 60
 const RETRY_SCHEDULE_SECONDS := [1, 5, 15, 60, 60]
 const CIRCUIT_OPEN_SECONDS := 60
+const SHUTDOWN_FLUSH_BUDGET_SECONDS := 2.0
 
 var _config_parser := ConfigParser.new()
 var _crypto := CryptoHelper.new()
@@ -28,6 +29,7 @@ var _persistence := Persistence.new()
 var _transport: Node
 var _flush_timer: Timer
 var _retry_timer: Timer
+var _quit_timer: Timer
 var _configured := false
 var _config := {}
 var _state := {}
@@ -37,9 +39,15 @@ var _retry_attempt := 0
 var _pending_player_seed := ""
 var _circuit_open_until := 0
 var _clock_override := -1
+var _shutdown_started := false
+var _quit_requested := false
+var _suppress_actual_quit_for_testing := false
+var _quit_count_for_testing := 0
 
 
 func _ready() -> void:
+	get_tree().set_auto_accept_quit(false)
+
 	_flush_timer = Timer.new()
 	_flush_timer.one_shot = false
 	_flush_timer.autostart = false
@@ -51,6 +59,12 @@ func _ready() -> void:
 	_retry_timer.autostart = false
 	_retry_timer.timeout.connect(_on_retry_timer_timeout)
 	add_child(_retry_timer)
+
+	_quit_timer = Timer.new()
+	_quit_timer.one_shot = true
+	_quit_timer.autostart = false
+	_quit_timer.timeout.connect(_on_quit_timer_timeout)
+	add_child(_quit_timer)
 
 	_set_transport(Transport.new())
 
@@ -66,6 +80,9 @@ func configure(config: Dictionary) -> int:
 	_retry_attempt = 0
 	_pending_player_seed = ""
 	_circuit_open_until = 0
+	_shutdown_started = false
+	_quit_requested = false
+	_quit_timer.stop()
 	_config = parsed["value"]
 	_configured = true
 	_state = _persistence.load_state()
@@ -170,6 +187,11 @@ func shutdown() -> int:
 	if not _configured:
 		return OK
 
+	if _shutdown_started:
+		return OK
+
+	_shutdown_started = true
+
 	if _state["consent_enabled"]:
 		var duration_s: int = max(0, _now_unix_seconds() - int(_state["session_started_at_unix"]))
 		if _queue.size() < QUEUE_CAP:
@@ -187,7 +209,7 @@ func shutdown() -> int:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		shutdown()
+		_request_shutdown_and_quit()
 
 
 func _bootstrap_state() -> void:
@@ -298,12 +320,16 @@ func _on_transport_completed(result: Dictionary) -> void:
 	var transport_error := int(result.get("transport_error", ERR_CANT_CONNECT))
 	if transport_error != OK or status_code == 0 or status_code >= 500:
 		_schedule_retry()
+		if _quit_requested and not _quit_timer.is_stopped():
+			return
 		return
 
 	if status_code >= 400:
 		_drop_inflight_batch()
 		_circuit_open_until = _now_unix_seconds() + CIRCUIT_OPEN_SECONDS
 		emit_signal("flush_completed", false, {"status_code": status_code, "dropped": true})
+		if _quit_requested and _can_complete_quit():
+			_finish_quit()
 		return
 
 	var flushed_batch_size := _inflight_batch.size()
@@ -316,6 +342,9 @@ func _on_transport_completed(result: Dictionary) -> void:
 	if not _pending_player_seed.is_empty():
 		_apply_player_seed(_pending_player_seed)
 		_pending_player_seed = ""
+
+	if _quit_requested and _can_complete_quit():
+		_finish_quit()
 
 
 func _schedule_retry() -> void:
@@ -416,3 +445,44 @@ func _retry_delay_for_testing(attempt_index: int) -> float:
 
 func _generate_uuid_for_local_bridge() -> String:
 	return _crypto.generate_uuid_v4()
+
+
+func _request_shutdown_and_quit() -> void:
+	if _quit_requested:
+		return
+
+	_quit_requested = true
+	shutdown()
+
+	if _can_complete_quit():
+		_finish_quit()
+		return
+
+	_quit_timer.start(SHUTDOWN_FLUSH_BUDGET_SECONDS)
+
+
+func _can_complete_quit() -> bool:
+	return not _transport.is_busy() and _inflight_batch.is_empty()
+
+
+func _on_quit_timer_timeout() -> void:
+	_finish_quit()
+
+
+func _finish_quit() -> void:
+	_quit_timer.stop()
+	_quit_requested = false
+	if _suppress_actual_quit_for_testing:
+		_quit_count_for_testing += 1
+		return
+
+	get_tree().quit()
+
+
+func _suppress_actual_quit_for_testing_only() -> void:
+	_suppress_actual_quit_for_testing = true
+	_quit_count_for_testing = 0
+
+
+func _quit_count_snapshot_for_testing() -> int:
+	return _quit_count_for_testing
