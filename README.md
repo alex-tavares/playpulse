@@ -2,86 +2,80 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** Ingest MVP, warehouse derivations, analytics API, dashboard MVP, and the Godot SDK MVP are live in the repo. Shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, local Godot validation scripts, and CI validation are in place; release-hardening phases remain.
+> **Project status:** The reusable core is live in the repo: Godot SDK MVP, ingest MVP, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation. Dashboard UI, Metabase automation, and game-specific examples now live in companion repos.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
-- Ship a polished dashboard that doubles as a portfolio piece for recruiters, partners, and collaborators.
 - Keep ownership of player data with an auditable, privacy-first stack.
 
 ## Product Pillars
 - **Godot SDK**: lightweight client for structured event capture.
 - **Ingestion and Analytics API**: Node/TypeScript services backed by Postgres for storage, querying, and privacy controls.
-- **Dashboard**: Next.js 14 front end with shadcn/ui and Recharts for live and demo visualizations.
-- **Internal BI**: Metabase for exploratory analysis, QA checks, and ad hoc warehouse queries.
+- **Warehouse**: Postgres tables, materialized views, and refresh commands for sessions, popularity, cohorts, and KPI summaries.
+- **Optional Consumers**: BI tools, dashboards, and example game integrations are treated as companion projects rather than core product code.
 
 ## Progress Snapshot
 **What exists today**
-- Project brief, architecture notes, privacy posture, and supporting guides under `docs/` (see `docs/PROJECT_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/PRIVACY.md`).
+- Project brief, architecture notes, privacy posture, and supporting guides under `docs/`.
 - Decision log in `docs/DECISIONS.md` plus scoped RFCs in `docs/RFC/`.
 - Shared workspace tooling and foundation packages for schemas, config, and test helpers under `packages/`.
-- The first runnable app in `apps/ingest`, including `POST /events`, `GET /health`, structured logging, auth checks, and Postgres-backed raw event persistence.
+- The ingest service in `apps/ingest`, including `POST /events`, `GET /health`, structured logging, auth checks, and Postgres-backed raw event persistence.
 - The warehouse worker in `apps/warehouse-worker`, including date-dimension seeding, demo-data seeding, and refresh flows for sessions, character popularity, retention cohorts, and KPI summary views.
 - The analytics API in `apps/analytics-api`, including health, summary, daily sessions, character popularity, and private retention read endpoints backed by the warehouse structures.
-- The dashboard in `apps/dashboard`, including the public metrics view, the private retention demo gate, loading and suppression states, and real analytics API integration.
-- The Godot SDK under `sdk/godot/playpulse`, including the `PlayPulse` autoload addon, standalone SDK tests, and MythTag validation helpers under `scripts/godot`.
+- The Godot SDK under `sdk/godot/playpulse`, including the `PlayPulse` autoload addon and standalone SDK tests.
 - Local Postgres development workflow via `docker compose` and CI validation for lint, typecheck, and tests.
-- Local Metabase workflow for internal analysis and warehouse exploration.
 
 **Next milestones**
 - Add the remaining observability and deployment readiness work around the backend services.
-- Close the final end-to-end release checks from SDK to dashboard.
+- Tighten the open-source story with companion repos for BI and game-specific examples.
 
 ## Repository Layout
 ```text
 apps/
-  analytics-api/  # Express analytics read API backed by warehouse-derived structures
-  dashboard/      # Next.js 14 dashboard wired to the real analytics API
-  ingest/         # Express ingest service with auth, validation, and raw-event persistence
+  analytics-api/    # Express analytics read API backed by warehouse-derived structures
+  ingest/           # Express ingest service with auth, validation, and raw-event persistence
   warehouse-worker/ # Refresh and seed commands for derived warehouse structures
 
 docs/
-  RFC/            # Product and architecture design docs + decision history
+  RFC/              # Product and architecture design docs + decision history
 
-packages/         # Shared schemas, config parsing, and test helpers
+packages/           # Shared schemas, config parsing, and test helpers
+sdk/godot/playpulse/ # Shippable Godot addon/autoload
 ```
 
-## Getting Started (Pre-alpha)
-The repository now includes runnable backend services, a seeded warehouse flow, and the first dashboard experience.
-- Clone the repo to review the docs or continue warehouse, analytics, or SDK work.
+## Companion Repos
+- **BI companion**: [alex-tavares/playpulse-bi](https://github.com/alex-tavares/playpulse-bi) for Metabase compose, bootstrap scripts, starter dashboards, and read-only BI roles.
+- **Examples repo**: [alex-tavares/playpulse-examples](https://github.com/alex-tavares/playpulse-examples) for MythTag-style integrations, launch helpers, and consumer-specific validation bridges.
+
+## Getting Started
+The repository includes runnable backend services, a seeded warehouse flow, and a reusable Godot SDK.
+- Clone the repo to review the docs or continue ingest, warehouse, analytics, or SDK work.
+- Use a BI tool or custom consumer against the warehouse outputs and analytics API.
 - Follow the implementation checklist and RFCs for the current delivery sequence.
 
 ## Development Setup
 - Enable the pinned package manager with `corepack enable`, then install dependencies with `pnpm install`.
 - Workspaces under `apps/*` and `packages/*` share the root toolchain and configs.
 - Start local Postgres with `pnpm db:up`; stop it with `pnpm db:down`; inspect logs with `pnpm db:logs`.
-- Start local Postgres plus Metabase with `pnpm db:up:bi`; inspect Metabase logs with `pnpm db:logs:bi`.
 - Generate the Prisma client with `pnpm db:generate`, then apply the migration with `pnpm db:migrate` before running backend integration tests or the services locally.
 - Use `PLAYPULSE_DATABASE_URL=postgresql://playpulse:playpulse@localhost:5432/playpulse` for local backend work.
-- Use Metabase at `http://localhost:3001` for internal exploratory analysis; the bootstrap flow creates a warehouse-first connection and a separate debug connection for raw events.
 - Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` for the current validation baseline.
 - Build shared workspaces with `pnpm build`.
 - Run the ingest service locally with `pnpm --filter @playpulse/ingest dev`.
 - Run the analytics API locally with `pnpm --filter @playpulse/analytics-api dev`.
-- Run the dashboard locally with `pnpm --filter @playpulse/dashboard dev`.
 - Seed the demo warehouse data with `pnpm db:seed-demo`, then rebuild derived structures with `pnpm db:refresh`.
 - Rebuild only retention cohorts with `pnpm db:refresh:retention` when validating retention-specific changes.
-- Rerun `pnpm metabase:bootstrap` if you need to recreate the local Metabase collections, saved questions, or starter dashboards.
-- Use the dashboard defaults `PLAYPULSE_DASHBOARD_ANALYTICS_BASE_URL=http://localhost:4002`, `PLAYPULSE_DASHBOARD_PRIVATE_ACCESS_CODE=playpulse-demo-access`, and `PLAYPULSE_DASHBOARD_PRIVATE_API_BEARER_TOKEN=playpulse-local-private-token` for the local demo path.
 - Individual workspace scripts can be executed with filters, for example `pnpm --filter @playpulse/schemas test`.
 - Run the standalone Godot SDK test suite with `powershell -ExecutionPolicy Bypass -File scripts/godot/Run-SdkTests.ps1`.
-- Install the local MythTag validation bridge with `powershell -ExecutionPolicy Bypass -File scripts/godot/Install-MythTagPlayPulseBridge.ps1`.
-- Launch MythTag with the SDK bridge and local env defaults via `powershell -ExecutionPolicy Bypass -File scripts/godot/Start-MythTagWithPlayPulse.ps1`. On Windows with ingest running in WSL, use `http://127.0.0.1:4001` rather than `http://localhost:4001` for the Godot ingest base URL.
-- Remove the temporary MythTag bridge and addon install with `powershell -ExecutionPolicy Bypass -File scripts/godot/Remove-MythTagPlayPulseBridge.ps1 -RemoveAddon`.
-- For end-to-end local validation, run ingest with an API key config that matches the bridge defaults, for example `PLAYPULSE_INGEST_API_KEYS_JSON='[{\"key_id\":\"mythtag-local-key\",\"signing_secret\":\"mythtag-local-secret\",\"game_id\":\"mythtag\",\"enabled\":true}]' pnpm --filter @playpulse/ingest dev`.
-- For internal analysis, prefer Metabase on the warehouse structures (`mv_metrics_summary_current`, `mv_sessions_daily`, `mv_character_popularity`, `retention_cohorts`) and use the separate debug connection only when you need `events_raw`.
+- For game-specific validation flows such as MythTag, use the companion examples repo.
+- For internal analysis with Metabase, use the BI companion repo against the warehouse structures (`mv_metrics_summary_current`, `mv_sessions_daily`, `mv_character_popularity`, `retention_cohorts`).
 
 ## Roadmap Themes
-1. End-to-end telemetry loop from Godot sample game to analytics API.
-2. Privacy-first dashboards with k-anonymized public and authenticated views.
+1. End-to-end telemetry loop from Godot SDK to ingest, warehouse, and analytics API.
+2. Privacy-first storage and read APIs with auditable consent and suppression rules.
 3. Hosting story: local Docker Compose for dev, lightweight cloud deploy guide.
 
 ## Stay in the Loop
 - Review the decision log (`docs/DECISIONS.md`) and open RFCs in `docs/RFC/` for current product and technical thinking.
 - File ideas and questions as GitHub issues or discussions.
-- Reach out if you want to pilot the stack with your game; we are shaping the roadmap with early adopters.
+- Reach out if you want to pilot the stack with your game; companion repos and consumer examples will keep expanding with early adopters.

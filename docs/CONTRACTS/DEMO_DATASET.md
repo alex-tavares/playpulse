@@ -7,8 +7,8 @@ This document defines the minimum seeded dataset required to validate the PlayPu
 The seeded dataset must:
 
 - cover both MythClash and MythTag
-- drive the public dashboard charts and KPI strip
-- drive the private retention view
+- drive public-facing analytics consumers and KPI summaries
+- drive the private retention consumer flow
 - exercise both suppressed and unsuppressed public buckets
 - include consented and non-consented events
 - include recent data so freshness and last-updated states render meaningfully
@@ -61,7 +61,7 @@ The seeded dataset must:
 | Public popularity chart | Top characters render with visible bars and one merged suppressed `other` bucket. |
 | Private retention view | At least 8 cohorts render with D1/D7 percentages; at least one retained count is hidden behind suppression. |
 | Consent filtering | Removing `consent_analytics = false` rows changes raw storage totals without changing leaked public aggregates. |
-| Freshness metadata | `last_updated` is recent enough to render live-ish dashboard copy without placeholder text. |
+| Freshness metadata | `last_updated` is recent enough to render live-ish consumer copy without placeholder text. |
 
 ## Remaining Implementation Assumptions
 

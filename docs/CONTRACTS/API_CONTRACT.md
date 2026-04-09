@@ -17,7 +17,7 @@ This document defines the milestone-ready API contracts for the PlayPulse MVP.
 
 - `POST /events` is write-only and requires signed client credentials.
 - `GET /metrics/summary`, `GET /metrics/sessions/daily`, and `GET /metrics/characters/popularity` are public-capable contracts.
-- `GET /metrics/retention/cohorts` is private-only and must require authenticated dashboard access.
+- `GET /metrics/retention/cohorts` is private-only and must require authenticated consumer access.
 - Public responses enforce k-anonymity and may null out suppressed numeric values while preserving structural placeholders.
 - Private responses still apply consent filtering and never expose raw player identifiers.
 
@@ -115,7 +115,7 @@ All analytics endpoints accept `game_id` with values `mythclash`, `mythtag`, or 
 
 ### `GET /metrics/summary`
 
-Returns dashboard KPI metrics for the requested game scope.
+Returns summary KPI metrics for the requested game scope.
 
 #### Query parameters
 
@@ -292,5 +292,5 @@ Returns private retention cohorts for D1 and D7 analysis.
 
 ## Remaining Implementation Assumptions
 
-- Private analytics authentication will be enforced through the future dashboard auth layer or equivalent protected server-side access. The endpoint contract stays the same regardless of the auth transport chosen later.
+- Private analytics authentication will be enforced through a protected consumer or server-side auth layer. The endpoint contract stays the same regardless of the auth transport chosen later.
 - Local single-instance development may use in-memory replay and rate-limit stores. Shared multi-instance backing stores are deferred to later infrastructure phases.

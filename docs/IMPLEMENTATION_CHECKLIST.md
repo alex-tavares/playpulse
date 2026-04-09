@@ -1,6 +1,6 @@
 # Implementation Checklist
 
-This is the master execution checklist for shipping the PlayPulse MVP. It tracks what already exists in the repository and the remaining implementation work needed to deliver the documented scope.
+This is the master execution checklist for shipping the PlayPulse core telemetry stack. It tracks what already exists in the repository and the remaining implementation work needed to deliver the documented scope.
 
 ## How to use this doc
 
@@ -12,9 +12,9 @@ This is the master execution checklist for shipping the PlayPulse MVP. It tracks
 
 ## Current Status
 
-The repository now has the MVP design foundation plus every major product slice needed for a real local telemetry loop: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, the analytics API in `apps/analytics-api`, the Next.js dashboard in `apps/dashboard`, and the Godot SDK plus local validation flow under `sdk/godot` and `scripts/godot`.
+The repository now has the MVP design foundation plus the reusable telemetry core needed for a real local loop: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, the analytics API in `apps/analytics-api`, and the Godot SDK under `sdk/godot`.
 
-The main remaining work is release hardening and finish-line verification. The raw write path, warehouse derivation layer, analytics read layer, dashboard UI, and Godot client SDK are now in place for local end-to-end validation.
+The main remaining work is release hardening and finish-line verification. The raw write path, warehouse derivation layer, analytics read layer, and Godot client SDK are now in place for local end-to-end validation. Dashboard UI, BI automation, and game-specific examples are treated as companion repos rather than core deliverables.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -84,23 +84,15 @@ The main remaining work is release hardening and finish-line verification. The r
 - [x] Enforce consent filtering on reads
 - [x] Enforce k-anonymity and suppression behavior on public responses
 - [x] Implement zero-fill response behavior for time series
-- [x] Return stable JSON response shapes for dashboard consumers
+- [x] Return stable JSON response shapes for analytics consumers
 - [x] Add integration tests for zero-fill, suppression, public/private behavior, and error cases
 
-## Phase 6 - Dashboard MVP
+## Phase 6 - Companion Repos And Optional Consumers
 
-- [x] Scaffold the Next.js dashboard app shell
-- [x] Implement the global layout and navigation from RFC-006
-- [x] Implement the public metrics page
-- [x] Implement the sessions-per-day chart card
-- [x] Implement the character-popularity chart card
-- [x] Implement the private insights page
-- [x] Implement the retention chart card
-- [x] Implement loading, empty, and error states
-- [x] Implement suppression UX exactly as documented
-- [x] Connect the dashboard to the analytics API or seeded demo service
-- [x] Add a sample or demo dataset flow for local preview
-- [x] Add UI smoke checks for public/private pages and chart-state rendering
+- [x] Move the custom dashboard out of the core repo scope
+- [x] Move Metabase automation and starter dashboards into a companion BI repo
+- [x] Move MythTag-specific bridge helpers and validation scripts into a companion examples repo
+- [ ] Publish generic dashboard-consumer guidance outside the core repo if the community demands it
 
 ## Phase 7 - Godot SDK MVP
 
@@ -113,12 +105,10 @@ The main remaining work is release hardening and finish-line verification. The r
 - [x] Implement consent enable and disable behavior
 - [x] Implement retry, backoff, and failure handling
 - [x] Implement shutdown flush behavior
-- [x] Instrument a sample Godot integration path for demo use
 - [x] Add tests or validation coverage for envelope generation, queue behavior, signing, and consent logic
 
 ## Phase 8 - Observability, Security, And Ops Readiness
 
-- [x] Add a local Metabase internal-analysis stack with warehouse-first and debug-only data connections
 - [ ] Add metrics for ingest, analytics, and materialized-view refresh aligned with RFC-005
 - [ ] Add request IDs and trace propagation
 - [ ] Ensure log fields align with RFC-005 and privacy requirements
@@ -132,12 +122,13 @@ The main remaining work is release hardening and finish-line verification. The r
 ## Phase 9 - Finish Line
 
 - [ ] Seed end-to-end demo data for MythClash and MythTag
-- [ ] Verify the end-to-end path from SDK to ingest to warehouse to analytics to dashboard
+- [ ] Verify the end-to-end path from SDK to ingest to warehouse to analytics
 - [ ] Verify public endpoints never expose raw identifiers
 - [ ] Verify k-anonymity with automated tests
 - [ ] Verify lint, typecheck, and tests run in CI
 - [ ] Verify local setup works from clone to demo
 - [ ] Update `README.md` with real run instructions, architecture status, and MVP capabilities
+- [ ] Verify the companion BI and examples repos still integrate cleanly with the core stack
 - [ ] Complete the MVP release-readiness checklist
 
 ## Post-MVP Backlog

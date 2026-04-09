@@ -2,10 +2,10 @@
 
 ## Branches & commits
 - Default: `main`. Feature branches: `feat/<area>-<slug>`.
-- Conventional Commits (feat, fix, refactor, chore, docs, test).
+- Conventional Commits (`feat`, `fix`, `refactor`, `chore`, `docs`, `test`).
 
 ## PR checklist
-- Tests, typecheck, lint, docs, screenshots (if UI).
+- Tests, typecheck, lint, docs, screenshots (if relevant to an optional consumer UI).
 
 ## Local dev
 - `docker compose up -d` for Postgres
@@ -13,7 +13,7 @@
 
 ## Deployment Checklist
 - [ ] Merge PR with 2 approvals and green CI
-- [ ] Verify staging deploy (ingest health, dashboard login)
+- [ ] Verify staging deploy (ingest health, analytics health, warehouse refresh)
 - [ ] Tag release (`vYY.MM.DD`) and confirm prod deploy
 - [ ] Monitor alerts for 30 minutes post-release
 

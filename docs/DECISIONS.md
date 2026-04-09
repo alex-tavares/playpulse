@@ -18,3 +18,6 @@
 - 2026-04-05: Moved custom event registration and quarantine flow to post-MVP scope.
 - 2026-04-05: Finalized the Godot SDK MVP config contract to require `ingest_base_url` alongside `api_key`, `signing_secret`, `game_id`, `game_version`, and `build_id`.
 - 2026-04-05: Landed the Godot SDK MVP as a GDScript addon/autoload in the PlayPulse repo with local PowerShell validation against MythTag; gzip transport and heartbeat diagnostics remain post-MVP.
+- 2026-04-09: Narrowed the main PlayPulse repo to the reusable telemetry core: Godot SDK, ingest, warehouse, analytics API, and generic docs stay here; dashboard UI is removed from the core repo.
+- 2026-04-09: Split Metabase automation into a companion repo (`playpulse-bi`) so BI setup remains optional and connects directly to Postgres rather than through HTTP.
+- 2026-04-09: Split game-specific validation helpers and examples into a companion repo (`playpulse-examples`) so the core SDK remains game-agnostic.
