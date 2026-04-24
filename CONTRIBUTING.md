@@ -9,7 +9,8 @@ Thank you for helping build PlayPulse!
 
 ## Pull Requests
 - Follow the steps in `docs/GUIDES/DEVELOPMENT_FLOW.md#contributor-workflow`.
-- Use **Conventional Commits** in branch names and PR titles.
+- Use **Conventional Commits** for commit messages and PR titles.
+- Use conventional branch prefixes that match the change type, such as `feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `refactor/<slug>`, `test/<slug>`, or `chore/<slug>`.
 - Include tests (`pnpm test`) and linting (`pnpm lint`) results in the PR description.
 - Keep diffs small; prefer multiple focused PRs.
 

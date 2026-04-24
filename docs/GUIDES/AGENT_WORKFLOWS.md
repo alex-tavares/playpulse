@@ -1,162 +1,104 @@
 # Agent Workflows
 
-Use this guide for prompt recipes and repeatable agent workflows. Keep root `AGENTS.md` short; put longer prompt material here.
+Use this guide to choose the right PlayPulse skill or subagent workflow. Keep root `AGENTS.md` short; reusable execution guidance belongs in `.agents/skills`.
 
 ## Session Bootstrap
 
-```text
-Act as a senior engineer working in the PlayPulse monorepo.
+For most tasks, start with the relevant skill instead of pasting long prompt templates. Codex should read `AGENTS.md`, then the docs and RFCs required by that file.
 
-First read:
-- docs/PROJECT_BRIEF.md
-- docs/ARCHITECTURE.md
-- docs/EVENTS.md
-- docs/CONTRACTS/API_CONTRACT.md
-- docs/PRIVACY.md
-- docs/CODING_STANDARDS.md
-- docs/TEST_STRATEGY.md
-- docs/ENV.md
-- docs/DECISIONS.md
-
-Then read only the RFCs relevant to this task.
-
-Before writing code:
-1. Summarize the constraints that matter for this task.
-2. List the files, apps, and packages that should change.
-3. Identify any doc conflicts or missing decisions.
-4. Propose the smallest vertical slice worth implementing.
-
-Do not invent architecture beyond the ratified docs.
-```
-
-## Feature Prompt
+Use this shape:
 
 ```text
-Act as my senior PlayPulse engineer.
-
-Read AGENTS.md and the relevant docs/RFCs for this scope.
+Use $playpulse-feature-slice.
 
 Task:
-<PASTE FEATURE SCOPE>
-
-Return exactly:
-1. Acceptance criteria with doc references.
-2. Minimal implementation plan.
-3. Interfaces/types to introduce or update.
-4. Tests only first:
-   - unit tests
-   - integration tests
-   - privacy/security edge cases
-5. Risks, assumptions, and open questions.
-
-Important constraints:
-- TypeScript strict
-- JSON-only contracts
-- shared validation in packages/schemas
-- no PII
-- no body logging
-- k-anonymity for public analytics
-- keep diffs minimal
-
-After I confirm, return only the minimal unified diff needed to make the tests pass.
+<describe the feature or fix>
 ```
 
-## Scaffold Prompt
+For complex research or review, ask for read-only subagents explicitly:
 
 ```text
-Scaffold the smallest production-credible starting point for this PlayPulse workspace:
-<PASTE app or package name>
-
-Read AGENTS.md plus the relevant docs first.
-
-Requirements:
-- match the documented monorepo architecture
-- use src/{routes,controllers,services,repos,lib,config} for services
-- keep shared contracts in packages, not duplicated in apps
-- add minimal scripts, TypeScript config, and test wiring
-- include at least one smoke test or contract test
-- do not over-scaffold features that are not yet specified in docs
-
-Return:
-1. files to create
-2. rationale for each file
-3. tests first
-4. then a minimal unified diff only
+Use $playpulse-review. Spawn playpulse_doc_mapper, playpulse_contract_reviewer, playpulse_privacy_reviewer, and playpulse_test_planner in parallel, then consolidate findings.
 ```
 
-## Bugfix Prompt
+## Feature Or Scaffold Work
 
-```text
-You are debugging PlayPulse.
+Use `$playpulse-feature-slice` for new endpoints, app/package slices, SDK work, and production-credible scaffolding.
 
-Read AGENTS.md and the docs/RFCs that govern the failing behavior.
+Expected behavior:
 
-Given this failure:
-<PASTE failing test, log, or bug report>
+- derive acceptance criteria from docs
+- identify minimal files/apps/packages to change
+- write tests first
+- implement the smallest vertical slice
+- run targeted tests, lint, and typecheck where practical
 
-Return:
-1. Root-cause hypothesis tied to the violated contract or RFC.
-2. The smallest regression test that should fail first.
-3. The minimal unified diff to fix it.
-4. Any follow-up hardening that should be a separate change.
+For unclear event/API/storage shapes, use `$playpulse-contract-design` before implementation.
 
-Prioritize privacy, security, and data correctness regressions over stylistic cleanup.
-```
+## Bugfix Work
 
-## Refactor Prompt
+Use `$playpulse-bugfix-triage` for failing tests, logs, or bug reports.
 
-```text
-Refactor this PlayPulse code for modularity and testability without changing behavior.
+Expected behavior:
 
-Read AGENTS.md and the relevant docs first.
+- tie the root cause to a violated contract, RFC, or decision
+- add or update a regression test first
+- apply the smallest fix
+- separate follow-up hardening from the bug fix
 
-Goals:
-- thinner routes/controllers
-- extract pure functions
-- reduce duplication across apps
-- preserve API and schema contracts
-- add or improve focused unit tests
+## Refactor Work
 
-Return only:
-1. short refactor plan
-2. minimal unified diff
-3. tests added or updated
-```
+Use `$playpulse-refactor` for behavior-preserving cleanup.
 
-## Data Contract Prompt
+Expected behavior:
 
-```text
-Design the data contract for this PlayPulse change before implementation:
-<PASTE telemetry or analytics scope>
+- preserve API, schema, env, storage, and privacy behavior
+- thin routes/controllers where needed
+- extract pure functions or shared helpers only when useful
+- add focused tests when touching shared or previously untested behavior
 
-Read AGENTS.md, docs/EVENTS.md, docs/CONTRACTS/API_CONTRACT.md, docs/PRIVACY.md, and the relevant RFCs first.
+## Contract Design
 
-Return:
-1. proposed request/event schema
-2. storage shape
-3. derived/query shape
-4. sample valid and invalid payloads
-5. privacy and suppression rules
-6. observability requirements
-7. tests that should be written first
+Use `$playpulse-contract-design` before implementation when a task changes:
 
-Do not write implementation code until the contract is coherent.
-```
+- telemetry events
+- ingest request handling
+- analytics responses
+- schema validation
+- warehouse or derived query shape
+- privacy, consent, or suppression behavior
 
-## Review Prompt
+The output should define the contract and tests before code changes.
 
-```text
-Review this PlayPulse change against AGENTS.md and the repo docs.
+## Review Work
 
-Focus on:
-- contract drift
-- privacy leaks
-- auth/signature/rate-limit regressions
-- missing suppression or consent handling
-- weak modular boundaries
-- missing tests
-- undocumented env vars or ops assumptions
+Use `$playpulse-review` for diffs, branches, or PRs.
 
-Return findings first, ordered by severity, with file/line references.
-Keep the summary brief.
-```
+For broad reviews, ask for these subagents:
+
+- `playpulse_doc_mapper`
+- `playpulse_contract_reviewer`
+- `playpulse_privacy_reviewer`
+- `playpulse_test_planner`
+
+Findings should lead, ordered by severity, with file and line references.
+
+## Branch And Commit Naming
+
+When Codex creates a branch, commit, or PR title, require:
+
+- Conventional Commits format for commits and PR titles: `type(scope): summary`.
+- Conventional branch prefixes by change type: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `refactor/<slug>`, `test/<slug>`, or `chore/<slug>`.
+- Day-to-day branches from `develop`; `main` is release-only.
+
+## Hooks And Rules
+
+PlayPulse does not configure project hooks or rules by default.
+
+Add hooks only for deterministic lifecycle checks, such as:
+
+- scanning prompts for pasted secrets
+- verifying stop-time checklist output
+- collecting non-sensitive local quality signals
+
+Add rules only when the team needs shared command approval policy. Keep user-specific approvals, sandbox, model, provider, and credentials in user-level Codex configuration.
