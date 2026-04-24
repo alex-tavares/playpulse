@@ -43,6 +43,7 @@ export const createEventsController = ({
       }
 
       const result = await eventIngestService.ingest(parsedJson, authenticatedRequest.apiKey.keyId);
+      response.locals.context.eventsWritten = result.acceptedCount;
 
       response.status(202).json({
         data: {

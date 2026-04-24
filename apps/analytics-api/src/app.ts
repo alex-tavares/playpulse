@@ -5,15 +5,21 @@ import type { Logger } from 'pino';
 import type { AnalyticsConfig } from './config/analytics-config';
 import { createHealthRouter } from './routes/health-routes';
 import { createMetricsRouter } from './routes/metrics-routes';
+import { createObservabilityRouter } from './routes/observability-routes';
 import { AnalyticsReadRepo } from './repos/analytics-read-repo';
 import { AnalyticsMetricsService } from './services/analytics-metrics-service';
 import { notFoundHandler, sendHttpError, toHttpError } from './lib/http-error';
+import {
+  createAnalyticsObservabilityMetrics,
+  type AnalyticsMetrics,
+} from './lib/observability-metrics';
 import { sanitizeUserAgent, truncateIpAddress } from './lib/ip';
 import { createRequestContext, type AnalyticsResponseLocals } from './lib/request-context';
 
 interface AnalyticsAppDependencies {
   config: AnalyticsConfig;
   logger: Logger;
+  metrics?: AnalyticsMetrics;
   now?: () => Date;
   prisma: PrismaClient;
 }
@@ -35,6 +41,7 @@ const setCorsHeaders = (response: Response, allowedOrigins: string[], requestOri
 export const createAnalyticsApp = ({
   config,
   logger,
+  metrics = createAnalyticsObservabilityMetrics(),
   now = () => new Date(),
   prisma,
 }: AnalyticsAppDependencies) => {
@@ -53,20 +60,34 @@ export const createAnalyticsApp = ({
         : undefined;
     const remoteIp = request.ip || forwardedIp || request.socket.remoteAddress || undefined;
 
-    response.locals.context = createRequestContext(startedAt.getTime(), truncateIpAddress(remoteIp));
+    response.locals.context = createRequestContext(
+      startedAt.getTime(),
+      truncateIpAddress(remoteIp),
+      request.headers['x-request-id']
+    );
+    response.setHeader('X-Request-Id', response.locals.context.requestId);
 
     response.on('finish', () => {
       const requestContext = response.locals.context;
+      const route = request.route?.path ?? request.path;
+      const latencyMs = now().getTime() - startedAt.getTime();
+      metrics.recordRequest({
+        durationMs: latencyMs,
+        endpoint: route,
+        statusCode: response.statusCode,
+      });
+
       logger.info({
         error_code: requestContext?.errorCode,
         ip_prefix: requestContext?.ipPrefix ?? 'unknown',
-        latency_ms: Date.now() - startedAt.getTime(),
+        latency_ms: latencyMs,
         method: request.method,
         payload_bytes: requestContext?.payloadBytes ?? 0,
         request_id: requestContext?.requestId ?? 'unknown',
-        route: request.route?.path ?? request.path,
+        route,
         service: 'analytics',
         status_code: response.statusCode,
+        trace_id: requestContext?.requestId ?? 'unknown',
         ts: new Date().toISOString(),
         user_agent: sanitizeUserAgent(
           Array.isArray(request.headers['user-agent'])
@@ -89,6 +110,7 @@ export const createAnalyticsApp = ({
   });
 
   app.use(createHealthRouter(now));
+  app.use(createObservabilityRouter(metrics));
   app.use(
     createMetricsRouter({
       analyticsConfig: config,

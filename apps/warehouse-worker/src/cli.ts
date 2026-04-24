@@ -6,6 +6,7 @@ import { DateDimensionService } from './services/date-dimension-service';
 import { DemoSeedService } from './services/demo-seed-service';
 import { RetentionRefreshService } from './services/retention-refresh-service';
 import { RollingRefreshService } from './services/rolling-refresh-service';
+import { createCommandOutput, type WarehouseCommand } from './lib/command-output';
 
 const createServices = (prisma: PrismaClient) => {
   const config = readWarehouseConfig();
@@ -28,7 +29,8 @@ const createServices = (prisma: PrismaClient) => {
 };
 
 const main = async () => {
-  const command = process.argv[2];
+  const command = process.argv[2] as WarehouseCommand | undefined;
+  const startedAtMs = Date.now();
   const prisma = new PrismaClient();
 
   try {
@@ -40,44 +42,39 @@ const main = async () => {
         await rollingRefreshService.run();
         const retentionResult = await retentionRefreshService.run();
         console.info(
-          JSON.stringify({
-            cohort_count: retentionResult.cohortCount,
-            command,
-            status: 'ok',
-          })
+          JSON.stringify(
+            createCommandOutput(command, startedAtMs, () => new Date(), {
+              cohort_count: retentionResult.cohortCount,
+            })
+          )
         );
         break;
       }
       case 'refresh:retention': {
         const retentionResult = await retentionRefreshService.run();
         console.info(
-          JSON.stringify({
-            cohort_count: retentionResult.cohortCount,
-            command,
-            status: 'ok',
-          })
+          JSON.stringify(
+            createCommandOutput(command, startedAtMs, () => new Date(), {
+              cohort_count: retentionResult.cohortCount,
+            })
+          )
         );
         break;
       }
       case 'refresh:rolling': {
         await rollingRefreshService.run();
-        console.info(
-          JSON.stringify({
-            command,
-            status: 'ok',
-          })
-        );
+        console.info(JSON.stringify(createCommandOutput(command, startedAtMs, () => new Date())));
         break;
       }
       case 'seed:demo': {
         const seedResult = await demoSeedService.run();
         console.info(
-          JSON.stringify({
-            command,
-            generated_count: seedResult.generatedCount,
-            inserted_count: seedResult.insertedCount,
-            status: 'ok',
-          })
+          JSON.stringify(
+            createCommandOutput(command, startedAtMs, () => new Date(), {
+              generated_count: seedResult.generatedCount,
+              inserted_count: seedResult.insertedCount,
+            })
+          )
         );
         break;
       }

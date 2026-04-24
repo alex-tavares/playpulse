@@ -14,8 +14,20 @@
 ## Deployment Checklist
 - [ ] Merge PR with 2 approvals and green CI
 - [ ] Verify staging deploy (ingest health, analytics health, warehouse refresh)
+- [ ] Run `pnpm smoke` against staging with ingest, analytics, private retention, and optional Metabase URLs configured
+- [ ] Confirm `/metrics` responds for ingest and analytics through the intended protected network path
 - [ ] Tag release (`vYY.MM.DD`) and confirm prod deploy
 - [ ] Monitor alerts for 30 minutes post-release
+
+## Staging Smoke Checklist
+- [ ] `pnpm db:migrate` reports no pending migrations or applies the expected migration set
+- [ ] `pnpm db:seed-demo` and `pnpm db:refresh` complete successfully for sanitized demo data
+- [ ] Ingest `/health` returns `status=ok`
+- [ ] Analytics `/health` returns `status=ok`
+- [ ] Public analytics summary, sessions, and character popularity return non-empty MVP-shaped responses
+- [ ] Private retention returns cohorts only when the bearer token is supplied
+- [ ] Ingest and analytics `/metrics` include request counters and duration histograms without raw identifiers
+- [ ] Metabase companion setup can reach the warehouse when included in the environment
 
 ## Incident: Ingest Degradation
 - [ ] Acknowledge alert within 5 minutes

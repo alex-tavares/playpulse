@@ -430,6 +430,31 @@ describe('analytics app integration', () => {
     expect(response.body.request_id).toBeTruthy();
   });
 
+  it('propagates sanitized request ids and exposes privacy-safe metrics', async () => {
+    const app = createAnalyticsApp({
+      config: analyticsConfig,
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+
+    const summaryResponse = await request(app)
+      .get('/metrics/summary?game_id=mythclash')
+      .set('X-Request-Id', 'analytics-smoke-1');
+    const metricsResponse = await request(app).get('/metrics');
+
+    expect(summaryResponse.status).toBe(200);
+    expect(summaryResponse.headers['x-request-id']).toBe('analytics-smoke-1');
+    expect(summaryResponse.body.request_id).toBe('analytics-smoke-1');
+    expect(metricsResponse.status).toBe(200);
+    expect(metricsResponse.headers['content-type']).toContain('text/plain');
+    expect(metricsResponse.text).toContain(
+      'analytics_requests_total{endpoint="/metrics/summary",status_class="2xx"} 1'
+    );
+    expect(metricsResponse.text).not.toContain('private-token');
+    expect(metricsResponse.text).not.toContain('player_id_hash');
+  });
+
   it('returns public summary metrics for a single title', async () => {
     const app = createAnalyticsApp({
       config: analyticsConfig,

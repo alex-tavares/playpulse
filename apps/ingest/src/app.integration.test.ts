@@ -90,6 +90,42 @@ describe('ingest app integration', () => {
     expect(response.body.request_id).toBeTruthy();
   });
 
+  it('propagates sanitized request ids and exposes privacy-safe metrics', async () => {
+    const app = createIngestApp({
+      config: readIngestConfig(baseEnv),
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+    const signedRequest = buildSignedRequest(
+      {
+        events: [createSessionStartEvent()],
+      },
+      {
+        nonce: '04c9f3e0-1e4d-4e4e-9c7b-6e8b5a23c4c1',
+      }
+    );
+
+    const ingestResponse = await request(app)
+      .post('/events')
+      .set({
+        ...signedRequest.headers,
+        'X-Request-Id': 'smoke-request-1',
+      })
+      .send(signedRequest.rawBody);
+    const metricsResponse = await request(app).get('/metrics');
+
+    expect(ingestResponse.status).toBe(202);
+    expect(ingestResponse.headers['x-request-id']).toBe('smoke-request-1');
+    expect(ingestResponse.body.request_id).toBe('smoke-request-1');
+    expect(metricsResponse.status).toBe(200);
+    expect(metricsResponse.headers['content-type']).toContain('text/plain');
+    expect(metricsResponse.text).toContain('ingest_requests_total{status_class="2xx",outcome="accepted"} 1');
+    expect(metricsResponse.text).toContain('ingest_events_written_total{source="godot_sdk"} 1');
+    expect(metricsResponse.text).not.toContain('test-key');
+    expect(metricsResponse.text).not.toContain('player_id_hash');
+  });
+
   it('accepts valid signed batches and persists rows', async () => {
     const app = createIngestApp({
       config: readIngestConfig(baseEnv),

@@ -29,6 +29,17 @@ Set these variables in deployment environments to align with RFC-003 and RFC-004
 | `PLAYPULSE_ANALYTICS_TRUST_PROXY` | `false` | Whether analytics should trust proxy forwarding headers when resolving client IPs. |
 | `PLAYPULSE_ANALYTICS_PRIVATE_BEARER_TOKEN` | `playpulse-local-private-token` | Temporary bearer token used to protect private retention reads before a consumer-specific auth layer exists. |
 
+## Smoke Check Variables
+
+These variables are read by `pnpm smoke` and do not change service runtime behavior.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PLAYPULSE_SMOKE_INGEST_BASE_URL` | `http://localhost:4001` | Base URL for ingest health and metrics checks. |
+| `PLAYPULSE_SMOKE_ANALYTICS_BASE_URL` | `http://localhost:4002` | Base URL for analytics health, metrics, and public analytics checks. |
+| `PLAYPULSE_SMOKE_ANALYTICS_PRIVATE_BEARER_TOKEN` | unset | Optional token for private retention smoke checks; falls back to `PLAYPULSE_ANALYTICS_PRIVATE_BEARER_TOKEN` when unset. |
+| `PLAYPULSE_SMOKE_METABASE_BASE_URL` | unset | Optional Metabase base URL for companion BI reachability checks. |
+
 Companion repos own additional configuration:
 - BI and Metabase-specific variables now live in [alex-tavares/playpulse-bi](https://github.com/alex-tavares/playpulse-bi).
 - Game-specific example and validation variables now live in [alex-tavares/playpulse-examples](https://github.com/alex-tavares/playpulse-examples).

@@ -109,26 +109,26 @@ The main remaining work is release hardening and finish-line verification. The r
 
 ## Phase 8 - Observability, Security, And Ops Readiness
 
-- [ ] Add metrics for ingest, analytics, and materialized-view refresh aligned with RFC-005
-- [ ] Add request IDs and trace propagation
-- [ ] Ensure log fields align with RFC-005 and privacy requirements
+- [x] Add metrics for ingest, analytics, and materialized-view refresh aligned with RFC-005
+- [x] Add request IDs and trace propagation
+- [x] Ensure log fields align with RFC-005 and privacy requirements
 - [ ] Add staging and prod environment config documentation as code or templates
 - [ ] Document secret handling and local `.env` setup
 - [ ] Add a deployable local stack for demo and staging parity where feasible
-- [ ] Add a smoke-test checklist for staging
+- [x] Add a smoke-test checklist for staging
 - [ ] Align actual branch protection and CI expectations with the documented workflow
 - [ ] Confirm retention, backup, and restore procedures are represented in repo docs
 
 ## Phase 9 - Finish Line
 
-- [ ] Seed end-to-end demo data for MythClash and MythTag
-- [ ] Verify the end-to-end path from SDK to ingest to warehouse to analytics
-- [ ] Verify public endpoints never expose raw identifiers
-- [ ] Verify k-anonymity with automated tests
+- [x] Seed end-to-end demo data for MythClash and MythTag
+- [x] Verify the end-to-end path from SDK to ingest to warehouse to analytics
+- [x] Verify public endpoints never expose raw identifiers
+- [x] Verify k-anonymity with automated tests
 - [ ] Verify lint, typecheck, and tests run in CI
 - [ ] Verify local setup works from clone to demo
-- [ ] Update `README.md` with real run instructions, architecture status, and MVP capabilities
-- [ ] Verify the companion BI and examples repos still integrate cleanly with the core stack
+- [x] Update `README.md` with real run instructions, architecture status, and MVP capabilities
+- [x] Verify the companion BI and examples repos still integrate cleanly with the core stack
 - [ ] Complete the MVP release-readiness checklist
 
 ## Post-MVP Backlog

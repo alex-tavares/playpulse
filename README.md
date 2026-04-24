@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** The reusable core is live in the repo: Godot SDK MVP, ingest MVP, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation. First-party UI, Metabase automation, and game-specific examples now live in companion repos.
+> **Project status:** The reusable core is at MVP release-candidate scope: Godot SDK MVP, ingest MVP, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, smoke tooling, and CI validation. First-party UI, Metabase automation, and game-specific examples now live in companion repos.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
@@ -23,11 +23,11 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - The warehouse worker in `apps/warehouse-worker`, including date-dimension seeding, demo-data seeding, and refresh flows for sessions, character popularity, retention cohorts, and KPI summary views.
 - The analytics API in `apps/analytics-api`, including health, summary, daily sessions, character popularity, and private retention read endpoints backed by the warehouse structures.
 - The Godot SDK under `sdk/godot/playpulse`, including the `PlayPulse` autoload addon and standalone SDK tests.
-- Local Postgres development workflow via `docker compose` and CI validation for lint, typecheck, and tests.
+- Local Postgres development workflow via `docker compose`, privacy-safe `/metrics` endpoints, smoke checks, and CI validation for lint, typecheck, and tests.
 
 **Next milestones**
-- Add the remaining observability and deployment readiness work around the backend services.
-- Tighten the open-source story with companion repos for BI and game-specific examples.
+- Run final CI and hosted smoke verification, then tag the MVP release after human approval.
+- Continue the companion BI and example-game story outside this core repo.
 
 ## Repository Layout
 ```text
@@ -65,6 +65,8 @@ The repository includes runnable backend services, a seeded warehouse flow, and 
 - Run the analytics API locally with `pnpm --filter @playpulse/analytics-api dev`.
 - Seed the demo warehouse data with `pnpm db:seed-demo`, then rebuild derived structures with `pnpm db:refresh`.
 - Rebuild only retention cohorts with `pnpm db:refresh:retention` when validating retention-specific changes.
+- Run local smoke checks with `pnpm smoke` after the ingest and analytics services are running.
+- Run hosted smoke checks with `PLAYPULSE_SMOKE_INGEST_BASE_URL`, `PLAYPULSE_SMOKE_ANALYTICS_BASE_URL`, and optionally `PLAYPULSE_SMOKE_METABASE_BASE_URL` set.
 - Individual workspace scripts can be executed with filters, for example `pnpm --filter @playpulse/schemas test`.
 - Run the standalone Godot SDK test suite with `powershell -ExecutionPolicy Bypass -File scripts/godot/Run-SdkTests.ps1`.
 - For game-specific validation flows such as MythTag, use the companion examples repo.
@@ -74,6 +76,10 @@ The repository includes runnable backend services, a seeded warehouse flow, and 
 1. End-to-end telemetry loop from Godot SDK to ingest, warehouse, and analytics API.
 2. Privacy-first storage and read APIs with auditable consent and suppression rules.
 3. Hosting story: local Docker Compose for dev, lightweight cloud deploy guide.
+
+## MVP Release Readiness
+- Release readiness evidence and remaining approval gates are tracked in `docs/RELEASE_READINESS.md`.
+- The MVP tag is intentionally not created by the wrap-up work; final release approval should confirm CI, hosted smoke checks, and branch-protection status first.
 
 ## Stay in the Loop
 - Review the decision log (`docs/DECISIONS.md`) and open RFCs in `docs/RFC/` for current product and technical thinking.

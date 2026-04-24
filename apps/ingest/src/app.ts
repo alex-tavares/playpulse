@@ -4,6 +4,7 @@ import type { Logger } from 'pino';
 
 import { createEventsRouter } from './routes/events-routes';
 import { createHealthRouter } from './routes/health-routes';
+import { createMetricsRouter } from './routes/metrics-routes';
 import type { IngestConfig } from './config/ingest-config';
 import { EventsRawRepo } from './repos/events-raw-repo';
 import { EventIngestService } from './services/event-ingest-service';
@@ -11,6 +12,7 @@ import { IngestAuthService } from './services/ingest-auth-service';
 import { notFoundHandler, sendHttpError, toHttpError } from './lib/http-error';
 import { truncateIpAddress, sanitizeUserAgent } from './lib/ip';
 import { createRequestContext, type IngestResponseLocals } from './lib/request-context';
+import { createIngestMetrics, type IngestMetrics } from './lib/observability-metrics';
 import { DualWindowRateLimiter } from './lib/rate-limiter';
 import { ReplayCache } from './lib/replay-cache';
 
@@ -21,6 +23,7 @@ interface IngestAppDependencies {
   prisma: PrismaClient;
   ipRateLimiter?: DualWindowRateLimiter;
   keyRateLimiter?: DualWindowRateLimiter;
+  metrics?: IngestMetrics;
   replayCache?: ReplayCache;
 }
 
@@ -54,6 +57,7 @@ export const createIngestApp = ({
     config.PLAYPULSE_RATE_LIMIT_PER_KEY,
     config.PLAYPULSE_RATE_LIMIT_PER_KEY_BURST
   ),
+  metrics = createIngestMetrics(),
   replayCache = new ReplayCache(config.PLAYPULSE_REPLAY_WINDOW_SECONDS * 1000),
 }: IngestAppDependencies) => {
   const app = express();
@@ -77,11 +81,18 @@ export const createIngestApp = ({
         : undefined;
     const remoteIp = request.ip || forwardedIp || request.socket.remoteAddress || undefined;
 
-    response.locals.context = createRequestContext(startedAt.getTime(), truncateIpAddress(remoteIp));
+    response.locals.context = createRequestContext(
+      startedAt.getTime(),
+      truncateIpAddress(remoteIp),
+      request.headers['x-request-id']
+    );
+    response.setHeader('X-Request-Id', response.locals.context.requestId);
 
     response.on('finish', () => {
       const requestContext = response.locals.context;
       const requestId = requestContext?.requestId ?? 'unknown';
+      const route = request.route?.path ?? request.path;
+      const latencyMs = now().getTime() - startedAt.getTime();
       const contentLengthHeader = request.headers['content-length'];
       const rawContentLength = Array.isArray(contentLengthHeader)
         ? contentLengthHeader[0]
@@ -89,18 +100,30 @@ export const createIngestApp = ({
       const payloadBytes =
         requestContext?.payloadBytes ?? (Number.parseInt(rawContentLength ?? '0', 10) || 0);
 
+      metrics.recordRequest({
+        durationMs: latencyMs,
+        errorCode: requestContext?.errorCode ?? null,
+        route,
+        statusCode: response.statusCode,
+      });
+
+      if (requestContext?.eventsWritten) {
+        metrics.recordEventsWritten(requestContext.eventsWritten);
+      }
+
       logger.info({
         api_key_hash: requestContext?.apiKeyHash,
         error_code: requestContext?.errorCode,
         ip_prefix: requestContext?.ipPrefix ?? 'unknown',
-        latency_ms: Date.now() - startedAt.getTime(),
+        latency_ms: latencyMs,
         method: request.method,
         payload_bytes: payloadBytes,
         rate_limited: requestContext?.rateLimited ?? false,
         request_id: requestId,
-        route: request.route?.path ?? request.path,
+        route,
         service: 'ingest',
         status_code: response.statusCode,
+        trace_id: requestId,
         ts: new Date().toISOString(),
         user_agent: sanitizeUserAgent(
           Array.isArray(request.headers['user-agent'])
@@ -123,6 +146,7 @@ export const createIngestApp = ({
   });
 
   app.use(createHealthRouter(now));
+  app.use(createMetricsRouter(metrics));
   app.use(
     createEventsRouter({
       authService,
