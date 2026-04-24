@@ -7,7 +7,7 @@ Open-source, production-credible **game telemetry and analytics** for Godot 4 ti
 - Instrument a Godot 4 game with a lightweight SDK.
 - Collect privacy-safe data (no PII, consent-aware) to a Postgres warehouse.
 - Expose privacy-safe aggregates through a reusable analytics API.
-- Support optional consumers such as BI tools and community-built dashboards without coupling them to the core repo.
+- Support optional consumers such as BI tools and community-built integrations without coupling them to the core repo.
 
 ## Non-Negotiables
 - **TypeScript everywhere** (strict).

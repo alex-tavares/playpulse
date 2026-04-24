@@ -22,12 +22,11 @@
    - Read-only endpoints that query views/tables.
    - Applies **k-anonymity** for public requests.
 
-5) **Dashboard** (Next.js 14 + Tailwind + shadcn/ui + Recharts)
-   - Public section: anonymized, live-ish stats.
-   - Private section: retention, balance, drill-down (auth’d with NextAuth).
+5) **External Consumers**
+   - Optional BI tools, community integrations, and hosted clients consume the analytics API or warehouse outputs outside the core repo.
 
 ## Data Flow
-SDK → Ingest (`POST /events`) → `events_raw` → refresh MVs → Analytics API → Dashboard.
+SDK → Ingest (`POST /events`) → `events_raw` → refresh MVs → Analytics API → external consumers.
 
 ## Cross-cutting Concerns
 - **Privacy**: no PII; IP truncated (/24); consent filtering on read.

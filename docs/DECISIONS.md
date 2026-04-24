@@ -8,7 +8,7 @@
 - 2025-09-21: Ratified RFC-003 ingest security posture (auth headers, replay window, rate limits, logging).
 - 2025-09-21: Ratified RFC-004 throughput assumptions, SLOs, and rate limit math for ingest MVP.
 - 2025-09-21: Ratified RFC-005 observability metrics, alerts, and logging schema for ingest MVP.
-- 2025-09-21: Ratified RFC-006 dashboard IA, initial charts, and k-anonymity UX for MVP.
+- 2025-09-21: Superseded RFC-006 first-party UI IA; first-party UI is no longer part of the core repo scope.
 - 2025-09-21: Ratified RFC-007 Godot SDK surface, queue strategy, and reliability guarantees for MVP.
 - 2025-09-21: Ratified RFC-008 storage model plan (events_raw partitions, derived views, refresh cadence).
 - 2025-09-21: Ratified RFC-009 environment definitions, release process, and incident runbooks for MVP.
@@ -18,6 +18,6 @@
 - 2026-04-05: Moved custom event registration and quarantine flow to post-MVP scope.
 - 2026-04-05: Finalized the Godot SDK MVP config contract to require `ingest_base_url` alongside `api_key`, `signing_secret`, `game_id`, `game_version`, and `build_id`.
 - 2026-04-05: Landed the Godot SDK MVP as a GDScript addon/autoload in the PlayPulse repo with local PowerShell validation against MythTag; gzip transport and heartbeat diagnostics remain post-MVP.
-- 2026-04-09: Narrowed the main PlayPulse repo to the reusable telemetry core: Godot SDK, ingest, warehouse, analytics API, and generic docs stay here; dashboard UI is removed from the core repo.
+- 2026-04-09: Narrowed the main PlayPulse repo to the reusable telemetry core: Godot SDK, ingest, warehouse, analytics API, and generic docs stay here; first-party UI is removed from the core repo.
 - 2026-04-09: Split Metabase automation into a companion repo (`playpulse-bi`) so BI setup remains optional and connects directly to Postgres rather than through HTTP.
 - 2026-04-09: Split game-specific validation helpers and examples into a companion repo (`playpulse-examples`) so the core SDK remains game-agnostic.

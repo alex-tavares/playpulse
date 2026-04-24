@@ -13,7 +13,7 @@
     "db:seed-demo": "corepack pnpm --filter @playpulse/warehouse-worker run seed:demo",
     "db:up": "docker compose up -d postgres",
     "dev": "corepack pnpm -r --if-present run dev",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx,.cjs,.mjs",
+    "lint": "eslint . --ext .ts,.js,.cjs,.mjs",
     "test": "corepack pnpm exec prisma generate && corepack pnpm exec prisma migrate deploy && vitest run",
     "test:watch": "vitest",
     "typecheck": "corepack pnpm exec prisma generate && corepack pnpm -r --if-present run typecheck"
@@ -26,15 +26,11 @@
     "@prisma/client": "^5.20.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/user-event": "^14.5.2",
     "@types/node": "^20.16.5",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "jsdom": "^25.0.1",
     "prettier": "^3.2.5",
     "prisma": "^5.20.0",
     "supertest": "^7.0.0",

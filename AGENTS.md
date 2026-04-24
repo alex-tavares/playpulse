@@ -17,7 +17,7 @@ Do not treat this file as the full specification. Follow the linked docs.
 
 PlayPulse is a privacy-first, self-hostable telemetry stack for Godot 4 games:
 
-`SDK -> ingest -> Postgres warehouse -> analytics API -> dashboard`
+`SDK -> ingest -> Postgres warehouse -> analytics API -> external consumers`
 
 The repo is still design-first. Most implementation has not landed yet. Prefer small vertical slices that ratify the documented architecture instead of broad speculative scaffolding.
 
@@ -25,7 +25,6 @@ The repo is still design-first. Most implementation has not landed yet. Prefer s
 
 - `apps/ingest`: future write path for `POST /events`
 - `apps/analytics-api`: future read-only metrics API
-- `apps/dashboard`: future Next.js dashboard
 - `packages/*`: shared schemas, config, helpers, and reusable libraries
 - `docs/*`: source of truth for product, architecture, contracts, privacy, and workflow
 
@@ -132,13 +131,7 @@ If multiple apps need the same rules or shapes, move them into `packages/*`.
 
 - Read from derived views/tables for product endpoints.
 - Enforce zero-fill and suppression behavior.
-- Keep endpoints read-only and stable for dashboard consumers.
-
-### Dashboard
-
-- Implement public and private views separately.
-- Honor suppression UX exactly as specified in RFC-006.
-- Empty, loading, and error states are part of the feature.
+- Keep endpoints read-only and stable for external consumers.
 
 ### Godot SDK
 

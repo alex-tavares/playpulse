@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** The reusable core is live in the repo: Godot SDK MVP, ingest MVP, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation. Dashboard UI, Metabase automation, and game-specific examples now live in companion repos.
+> **Project status:** The reusable core is live in the repo: Godot SDK MVP, ingest MVP, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, and CI validation. First-party UI, Metabase automation, and game-specific examples now live in companion repos.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.

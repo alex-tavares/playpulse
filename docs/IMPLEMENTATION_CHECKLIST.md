@@ -14,7 +14,7 @@ This is the master execution checklist for shipping the PlayPulse core telemetry
 
 The repository now has the MVP design foundation plus the reusable telemetry core needed for a real local loop: project docs, ratified RFCs, agent guidance, a bootstrapped pnpm workspace, shared TypeScript/ESLint/Prettier configuration, shared packages under `packages/`, a root Vitest setup, a local Postgres `docker compose` workflow, real CI validation for lint/typecheck/tests, a Prisma-backed `events_raw` schema, the ingest service in `apps/ingest`, the warehouse worker plus derived data flow in `apps/warehouse-worker`, the analytics API in `apps/analytics-api`, and the Godot SDK under `sdk/godot`.
 
-The main remaining work is release hardening and finish-line verification. The raw write path, warehouse derivation layer, analytics read layer, and Godot client SDK are now in place for local end-to-end validation. Dashboard UI, BI automation, and game-specific examples are treated as companion repos rather than core deliverables.
+The main remaining work is release hardening and finish-line verification. The raw write path, warehouse derivation layer, analytics read layer, and Godot client SDK are now in place for local end-to-end validation. First-party UI, BI automation, and game-specific examples are treated as companion repos rather than core deliverables.
 
 - [x] Architecture, privacy, testing, env, and RFC docs committed
 - [x] Agent guidance and workflows documented
@@ -89,10 +89,10 @@ The main remaining work is release hardening and finish-line verification. The r
 
 ## Phase 6 - Companion Repos And Optional Consumers
 
-- [x] Move the custom dashboard out of the core repo scope
+- [x] Move the first-party UI out of the core repo scope
 - [x] Move Metabase automation and starter dashboards into a companion BI repo
 - [x] Move MythTag-specific bridge helpers and validation scripts into a companion examples repo
-- [ ] Publish generic dashboard-consumer guidance outside the core repo if the community demands it
+- [ ] Publish generic consumer guidance outside the core repo if the community demands it
 
 ## Phase 7 - Godot SDK MVP
 

@@ -17,7 +17,7 @@ PlayPulse gives Godot developers an open-source middle ground:
 ## Target Users & Needs
 - **Primary**: Small Godot 4 teams (solo devs to 5-person studios) shipping gameplay-driven titles that need to understand player behavior to iterate post-launch.
 - **Secondary**: Technical directors or senior engineers mentoring student or hobby teams who need a privacy-safe reference stack to teach telemetry fundamentals without wiring a custom backend.
-- **Jobs-to-be-done**: Measure session length, level progression, character/build balance, and churn across updates; verify that consent policies are applied; connect warehouse outputs to the team’s preferred BI or community-built dashboard.
+- **Jobs-to-be-done**: Measure session length, level progression, character/build balance, and churn across updates; verify that consent policies are applied; connect warehouse outputs to the team’s preferred BI or community-built integration.
 - **Pain relief**: Avoid maintaining bespoke pipelines, eliminate surprise vendor fees, and keep event data on infrastructure they control.
 
 ## Scope
