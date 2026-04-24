@@ -8,14 +8,16 @@
 ## Branches
 - `main`: Tagged for releases only. CI must be green and release notes prepared before merging.
 - `develop`: Default branch for day-to-day work. All feature and bugfix PRs target `develop`.
-- `feature/<topic>`: Short-lived branches cut from `develop` (contributors may create them within a fork).
+- `feat/<topic>`: Short-lived feature branches cut from `develop` (contributors may create them within a fork).
+- `fix/<topic>`: Short-lived bugfix branches cut from `develop`.
+- `docs/<topic>`, `refactor/<topic>`, `test/<topic>`, `chore/<topic>`: Other short-lived branches named by Conventional Commit type.
 - `release/<version>`: Created by maintainers when stabilising a release; merged into both `main` and `develop`.
 - `hotfix/<topic>`: Emergency fixes branched from `main`, merged back into both `main` and `develop`.
 
 ## Contributor Workflow
 1. Find or open an issue describing the change. Tag it with `good first issue`, `bug`, or `enhancement` where helpful.
 2. Fork the repository (external contributors) or create a new branch from `develop` if you are part of the core team.
-3. Create a branch named `feature/<topic>` or `bugfix/<topic>`; keep the scope small.
+3. Create a conventional branch named by change type, such as `feat/<topic>`, `fix/<topic>`, `docs/<topic>`, `refactor/<topic>`, `test/<topic>`, or `chore/<topic>`; keep the scope small.
 4. Run `pnpm lint` and `pnpm test` locally. Add or update docs and tests in the same PR.
 5. Open a pull request into `develop` using Conventional Commits for your title (e.g. `feat: add ingestion events`). Link the issue.
 6. Ensure the PR description states testing performed and any follow-up work.
@@ -38,7 +40,7 @@
 ## Maintainer Duties
 - Triage issues weekly, apply labels, and mark `help wanted` items.
 - Ensure incoming PRs are scoped, follow the flow above, and target `develop`.
-- Use squash merges to keep history clean; ensure titles follow Conventional Commits.
+- Use squash merges to keep history clean; ensure commit messages and PR titles follow Conventional Commits.
 - Keep `main` protected (no direct pushes) and update branch protection rules when workflows change.
 - Publish release notes for each tagged release and announce breaking changes.
 
