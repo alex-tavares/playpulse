@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
-import type { MvpEvent } from '@playpulse/schemas';
+import type { TelemetryEvent } from '@playpulse/schemas';
 
 interface EventRawWriter {
   eventRaw: {
@@ -14,7 +14,7 @@ export class EventsRawRepo {
   constructor(private readonly prisma: EventRawWriter | PrismaClient) {}
 
   async insertBatch(
-    events: MvpEvent[],
+    events: TelemetryEvent[],
     apiKeyId: string,
     receivedAt: Date,
     ingestSource = 'godot_sdk'

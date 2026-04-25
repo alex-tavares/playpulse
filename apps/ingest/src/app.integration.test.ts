@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { createSessionStartEvent } from '@playpulse/testkit';
+import { createCustomEvent, createSessionStartEvent } from '@playpulse/testkit';
 
 import { createIngestApp } from './app';
 import { readIngestConfig } from './config/ingest-config';
@@ -146,6 +146,107 @@ describe('ingest app integration', () => {
     const storedEvent = await prisma.eventRaw.findFirstOrThrow();
     expect(storedEvent.consentAnalytics).toBe(true);
     expect(storedEvent.eventName).toBe('session_start');
+  });
+
+  it('accepts valid custom events, persists properties, and exposes aggregate custom metrics', async () => {
+    const app = createIngestApp({
+      config: readIngestConfig(baseEnv),
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+    const signedRequest = buildSignedRequest(
+      {
+        events: [createCustomEvent()],
+      },
+      {
+        nonce: '14c9f3e0-1e4d-4e4e-9c7b-6e8b5a23c4c1',
+      }
+    );
+
+    const response = await request(app).post('/events').set(signedRequest.headers).send(signedRequest.rawBody);
+    const metricsResponse = await request(app).get('/metrics');
+
+    expect(response.status).toBe(202);
+    expect(response.body.data.accepted_count).toBe(1);
+
+    const storedEvent = await prisma.eventRaw.findFirstOrThrow();
+    expect(storedEvent.eventName).toBe('level_end');
+    expect(storedEvent.schemaVersion).toBe('1.1');
+    expect(storedEvent.propsJsonb).toMatchObject({
+      completed: true,
+      duration_s: 180,
+      level_id: 'forest_01',
+    });
+    expect(metricsResponse.text).toContain('ingest_custom_events_total{outcome="accepted"} 1');
+    expect(metricsResponse.text).not.toContain('level_end');
+  });
+
+  it('rejects invalid custom events with validation_failed and aggregate custom metrics', async () => {
+    const app = createIngestApp({
+      config: readIngestConfig(baseEnv),
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+    const signedRequest = buildSignedRequest(
+      {
+        events: [
+          createCustomEvent({
+            properties: {
+              email: 'player@example.com',
+            },
+          }),
+        ],
+      },
+      {
+        nonce: '24c9f3e0-1e4d-4e4e-9c7b-6e8b5a23c4c1',
+      }
+    );
+
+    const response = await request(app).post('/events').set(signedRequest.headers).send(signedRequest.rawBody);
+    const metricsResponse = await request(app).get('/metrics');
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('validation_failed');
+    expect(await prisma.eventRaw.count()).toBe(0);
+    expect(metricsResponse.text).toContain('ingest_custom_events_total{outcome="rejected"} 1');
+    expect(metricsResponse.text).not.toContain('level_end');
+    expect(metricsResponse.text).not.toContain('player@example.com');
+  });
+
+  it('rejects custom events with unsafe identifier keys and values', async () => {
+    const app = createIngestApp({
+      config: readIngestConfig(baseEnv),
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+    const signedRequest = buildSignedRequest(
+      {
+        events: [
+          createCustomEvent({
+            properties: {
+              player_id: 'raw-player-123',
+              level_id: 'player@example.com',
+            },
+          }),
+        ],
+      },
+      {
+        nonce: '34c9f3e0-1e4d-4e4e-9c7b-6e8b5a23c4c1',
+      }
+    );
+
+    const response = await request(app).post('/events').set(signedRequest.headers).send(signedRequest.rawBody);
+    const metricsResponse = await request(app).get('/metrics');
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('validation_failed');
+    expect(await prisma.eventRaw.count()).toBe(0);
+    expect(metricsResponse.text).toContain('ingest_custom_events_total{outcome="rejected"} 1');
+    expect(metricsResponse.text).not.toContain('player_id');
+    expect(metricsResponse.text).not.toContain('player@example.com');
   });
 
   it('rejects invalid JSON with bad_request', async () => {

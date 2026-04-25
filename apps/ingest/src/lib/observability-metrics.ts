@@ -8,6 +8,7 @@ export interface IngestRequestMetric {
 }
 
 export interface IngestMetrics {
+  recordCustomEvents(outcome: 'accepted' | 'rejected', count: number): void;
   recordEventsWritten(count: number): void;
   recordRequest(metric: IngestRequestMetric): void;
   render(): string;
@@ -27,6 +28,15 @@ export const createIngestMetrics = (): IngestMetrics => {
   const registry = new PrometheusRegistry();
 
   return {
+    recordCustomEvents: (outcome, count) => {
+      registry.incrementCounter(
+        'ingest_custom_events_total',
+        'Custom events accepted or rejected by aggregate outcome.',
+        ['outcome'],
+        { outcome },
+        count
+      );
+    },
     recordEventsWritten: (count) => {
       registry.incrementCounter(
         'ingest_events_written_total',

@@ -3,7 +3,7 @@ import type { RequestHandler } from 'express';
 import { HttpError } from '../lib/http-error';
 import type { IngestResponseLocals } from '../lib/request-context';
 import { DualWindowRateLimiter } from '../lib/rate-limiter';
-import { EventIngestService } from '../services/event-ingest-service';
+import { countCustomEventCandidates, EventIngestService } from '../services/event-ingest-service';
 import { IngestAuthService } from '../services/ingest-auth-service';
 
 interface EventsControllerDependencies {
@@ -42,8 +42,10 @@ export const createEventsController = ({
         throw new HttpError(400, 'bad_request', 'Request body is not valid JSON');
       }
 
+      response.locals.context.customEventCandidates = countCustomEventCandidates(parsedJson);
       const result = await eventIngestService.ingest(parsedJson, authenticatedRequest.apiKey.keyId);
       response.locals.context.eventsWritten = result.acceptedCount;
+      response.locals.context.customEventsAccepted = result.customEventCount;
 
       response.status(202).json({
         data: {

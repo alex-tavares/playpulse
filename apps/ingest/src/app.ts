@@ -111,6 +111,17 @@ export const createIngestApp = ({
         metrics.recordEventsWritten(requestContext.eventsWritten);
       }
 
+      if (requestContext?.customEventsAccepted) {
+        metrics.recordCustomEvents('accepted', requestContext.customEventsAccepted);
+      }
+
+      if (
+        requestContext?.customEventCandidates &&
+        requestContext.errorCode === 'validation_failed'
+      ) {
+        metrics.recordCustomEvents('rejected', requestContext.customEventCandidates);
+      }
+
       logger.info({
         api_key_hash: requestContext?.apiKeyHash,
         error_code: requestContext?.errorCode,

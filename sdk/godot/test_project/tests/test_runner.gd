@@ -14,6 +14,7 @@ func _run_tests() -> void:
 	var tests := [
 		_test_config_validation,
 		_test_generate_mvp_envelopes,
+		_test_custom_events,
 		_test_invalid_properties_are_rejected,
 		_test_queue_cap_and_batch_flush,
 		_test_signing_headers_and_hmac_shape,
@@ -81,6 +82,60 @@ func _test_invalid_properties_are_rejected() -> void:
 		"timezone_offset_min": "bad",
 	})
 	_assert(result == ERR_INVALID_PARAMETER, "Invalid properties should be rejected")
+
+
+func _test_custom_events() -> void:
+	_install_fake_transport(false)
+	_reset_sdk("custom")
+	PlayPulse.configure(_base_config())
+
+	var result := PlayPulse.track("level_end", {
+		"completed": true,
+		"duration_s": 180,
+		"level_id": "forest_01",
+		"rewards": ["coin", "gem"],
+	})
+	_assert(result == OK, "valid custom event should enqueue")
+
+	var queue := PlayPulse._queue_snapshot_for_testing()
+	_assert(queue.size() == 1, "custom event should be queued")
+	_assert(queue[0]["event_name"] == "level_end", "custom event name should be preserved")
+	_assert(queue[0]["schema_version"] == "1.1", "custom events should use schema_version 1.1")
+
+	_assert(
+		PlayPulse.track("invalidName", {"value": 1}) == ERR_INVALID_PARAMETER,
+		"invalid custom event names should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"nested": {"bad": true}}) == ERR_INVALID_PARAMETER,
+		"nested custom event properties should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"email": "player@example.com"}) == ERR_INVALID_PARAMETER,
+		"PII-like custom event property keys should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"player_id": "raw-player-123"}) == ERR_INVALID_PARAMETER,
+		"raw identifier custom event property keys should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"level_id": "player@example.com"}) == ERR_INVALID_PARAMETER,
+		"email-like custom event property values should be rejected"
+	)
+	_assert(
+		PlayPulse.track(
+			"level_end",
+			{"level_id": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature"}
+		) == ERR_INVALID_PARAMETER,
+		"JWT-like custom event property values should be rejected"
+	)
+	var long_value := ""
+	for _index in range(129):
+		long_value += "x"
+	_assert(
+		PlayPulse.track("level_end", {"level_id": long_value}) == ERR_INVALID_PARAMETER,
+		"long custom event string values should be rejected"
+	)
 
 
 func _test_queue_cap_and_batch_flush() -> void:

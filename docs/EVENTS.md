@@ -1,10 +1,10 @@
 # Event Dictionary
 
-This document defines the normative MVP telemetry contract for PlayPulse. It is the source of truth for shared schemas and for the ingest request contract.
+This document defines the normative telemetry contract for PlayPulse. It is the source of truth for shared schemas and for the ingest request contract.
 
 ## Shared Envelope
 
-All MVP events emitted by the SDK and accepted by ingest must use the same envelope:
+All events emitted by the SDK and accepted by ingest must use the same envelope:
 
 | Field | Type | Rules |
 | --- | --- | --- |
@@ -26,8 +26,8 @@ All MVP events emitted by the SDK and accepted by ingest must use the same envel
 
 - Envelope plus `properties` must stay under 2 KB per event.
 - `properties` must stay under 1.5 KB uncompressed.
-- Arrays may contain at most 10 elements unless a field-specific rule is stricter.
-- Strings are capped at 64 characters unless a field-specific rule is stricter.
+- Core-event arrays may contain at most 10 elements unless a field-specific rule is stricter.
+- Core-event strings are capped at 64 characters unless a field-specific rule is stricter.
 - Numeric values are integers unless a field explicitly allows decimals.
 - Payloads must not contain free-text PII such as names, emails, chat text, addresses, or raw identifiers.
 - Event names and property keys use `snake_case`.
@@ -37,8 +37,10 @@ All MVP events emitted by the SDK and accepted by ingest must use the same envel
 - MVP starts at `schema_version = 1.0`.
 - Additive changes bump the minor version (`1.x`).
 - Breaking changes bump the major version.
-- Ingest accepts only major version `1` during MVP.
+- Ingest accepts only major version `1` during v1.x.
 - Unsupported major versions are rejected with `unsupported_schema_version` and logged.
+- Core SDK events continue to emit `schema_version = 1.0`.
+- Custom SDK events emit `schema_version = 1.1`.
 
 ## MVP Events
 
@@ -243,12 +245,65 @@ Example:
 }
 ```
 
+## Custom Events v1.1
+
+Game teams may send custom events without pre-registration by calling `track("level_end", {...})`. Custom events are stored in `events_raw.props_jsonb`, are visible through private debug APIs, and are available to BI/raw SQL consumers. Public analytics endpoints do not expose custom-event reporting in v1.1.
+
+### Event name rules
+
+- Must be `snake_case`, max 48 characters.
+- Must not use a reserved core event name: `session_start`, `session_end`, `match_start`, `match_end`, or `character_selected`.
+- Recommended examples: `level_end`, `item_crafted`, `quest_started`.
+
+### Property rules
+
+- Properties must be a flat object with at most 25 keys.
+- Property keys must be `snake_case`.
+- Values may be strings, finite numbers, booleans, or arrays of those primitives.
+- Objects, `null`, nested arrays, and unsupported JSON values are rejected.
+- String values must be privacy-safe and at most 128 characters; email-like strings, bearer/JWT-like tokens, and long free-text blobs are rejected.
+- The existing byte caps still apply: 2 KB per event and 1.5 KB for `properties`.
+- Envelope identifiers such as `session_id` and `player_id_hash` are allowed only in the controlled event envelope, not in custom `properties`.
+- Identifier, auth, contact, and free-text property keys are rejected, including `session_id`, `player_id`, `player_id_hash`, `user_id`, `account_id`, `device_id`, `email`, `email_address`, `phone`, `player_name`, `chat`, `message`, `token`, `secret`, `password`, `api_key`, `auth_token`, `access_token`, `refresh_token`, `jwt`, and `cookie`.
+- Gameplay identifiers remain valid, including `level_id`, `item_id`, `quest_id`, `match_id`, `map_id`, `mode_id`, `character_id`, `build_id`, and `loadout_id`.
+
+Nested gameplay state must be flattened before sending:
+
+```json
+{
+  "event_name": "level_end",
+  "schema_version": "1.1",
+  "properties": {
+    "level_id": "forest_01",
+    "completed": true,
+    "duration_s": 180,
+    "reward_ids": ["coin", "gem"]
+  }
+}
+```
+
+Do not send:
+
+```json
+{
+  "event_name": "level_end",
+  "schema_version": "1.1",
+  "properties": {
+    "level": {
+      "id": "forest_01"
+    },
+    "email": "player@example.com"
+  }
+}
+```
+
 ## Non-MVP / Deferred
 
-These event families are explicitly out of the MVP contract and must not be treated as required by implementation work:
+These event families are explicitly out of the v1.1 contract and must not be treated as required by implementation work:
 
 - `tutorial_step_completed`
-- custom events under `custom.<game_id>.<event_key>`
 - performance sampling events
 - structured error events
 - monetization or store events
+- public custom-event analytics
+- schema registry, event allow-listing, or quarantine tables

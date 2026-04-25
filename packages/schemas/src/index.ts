@@ -24,6 +24,11 @@ export const platformSchema = z.enum(['pc', 'mac', 'linux']);
 const requestIdSchema = z.string().min(1);
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must use YYYY-MM-DD format');
 const isoDateTimeSchema = z.string().datetime({ offset: true });
+const customEventNameMaxLength = 48;
+const customEventMaxBytes = 2048;
+const customEventPropertiesMaxBytes = 1536;
+const customEventPropertyKeyMaxCount = 25;
+const customEventStringMaxLength = 128;
 
 export const eventEnvelopeSchema = z.object({
   event_id: z.string().uuid(),
@@ -39,6 +44,153 @@ export const eventEnvelopeSchema = z.object({
   locale: localeSchema.optional(),
   consent_analytics: z.boolean(),
 });
+
+export const coreEventNames = [
+  'session_start',
+  'session_end',
+  'match_start',
+  'match_end',
+  'character_selected',
+] as const;
+
+export const coreEventNameSchema = z.enum(coreEventNames);
+export type CoreEventName = z.infer<typeof coreEventNameSchema>;
+
+const coreEventNameSet = new Set<string>(coreEventNames);
+
+export const isCoreEventName = (eventName: string): eventName is CoreEventName =>
+  coreEventNameSet.has(eventName);
+
+export const customEventNameSchema = snakeCaseSchema
+  .max(customEventNameMaxLength)
+  .refine((eventName) => !isCoreEventName(eventName), {
+    message: 'custom event_name must not use a reserved core event name',
+  });
+
+export const isCustomEventName = (eventName: string) =>
+  customEventNameSchema.safeParse(eventName).success;
+
+const customEventAllowedGameplayPropertyKeys = new Set([
+  'build_id',
+  'character_id',
+  'item_id',
+  'level_id',
+  'loadout_id',
+  'map_id',
+  'match_id',
+  'mode_id',
+  'quest_id',
+]);
+
+const customEventSensitivePropertyKeys = new Set([
+  'access_token',
+  'address',
+  'api_key',
+  'auth_token',
+  'authorization_header',
+  'chat',
+  'chat_text',
+  'cookie',
+  'device_id',
+  'email',
+  'email_address',
+  'error_message',
+  'ip',
+  'jwt',
+  'message',
+  'name',
+  'password',
+  'phone',
+  'phone_number',
+  'player_id',
+  'player_id_hash',
+  'player_name',
+  'refresh_token',
+  'secret',
+  'session_id',
+  'token',
+  'user_name',
+  'user_id',
+]);
+
+const sensitivePropertySubjects = [
+  'access',
+  'account',
+  'api',
+  'auth',
+  'authorization',
+  'device',
+  'email',
+  'phone',
+  'player',
+  'profile',
+  'refresh',
+  'session',
+  'user',
+];
+const sensitivePropertySuffixes = ['id', 'identifier', 'hash', 'key', 'token', 'uuid'];
+
+const emailLikeStringPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const jwtLikeStringPattern = /^eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const bearerLikeStringPattern = /^bearer\s+\S+$/i;
+
+const isSensitiveCustomEventPropertyKey = (key: string) => {
+  if (customEventAllowedGameplayPropertyKeys.has(key)) {
+    return false;
+  }
+
+  if (customEventSensitivePropertyKeys.has(key)) {
+    return true;
+  }
+
+  return sensitivePropertySubjects.some((subject) =>
+    sensitivePropertySuffixes.some((suffix) => {
+      const exactKey = `${subject}_${suffix}`;
+      return key === exactKey || (key.startsWith(`${subject}_`) && key.endsWith(`_${suffix}`));
+    })
+  );
+};
+
+const isSafeCustomEventString = (value: string) =>
+  value.length <= customEventStringMaxLength &&
+  !emailLikeStringPattern.test(value) &&
+  !jwtLikeStringPattern.test(value) &&
+  !bearerLikeStringPattern.test(value);
+
+export const customEventPropertyKeySchema = snakeCaseSchema.refine(
+  (key) => !isSensitiveCustomEventPropertyKey(key),
+  {
+    message: 'custom event property key is reserved for privacy',
+  }
+);
+
+const customEventStringValueSchema = z.string().refine(isSafeCustomEventString, {
+  message: `custom event string values must be privacy-safe and at most ${customEventStringMaxLength} characters`,
+});
+const customEventPrimitiveValueSchema = z.union([
+  customEventStringValueSchema,
+  z.number().finite(),
+  z.boolean(),
+]);
+export const customEventPropertyValueSchema = z.union([
+  customEventPrimitiveValueSchema,
+  z.array(customEventPrimitiveValueSchema),
+]);
+
+export const customEventPropertiesSchema = maxByteLength(
+  z.record(customEventPropertyKeySchema, customEventPropertyValueSchema).superRefine(
+    (properties, ctx) => {
+      if (Object.keys(properties).length > customEventPropertyKeyMaxCount) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `custom event properties must have at most ${customEventPropertyKeyMaxCount} keys`,
+        });
+      }
+    }
+  ),
+  customEventPropertiesMaxBytes,
+  'custom event properties'
+);
 
 const sessionStartPropertiesSchema = maxByteLength(
   z.object({
@@ -99,7 +251,7 @@ const characterSelectedPropertiesSchema = maxByteLength(
 );
 
 const mvpEventSchemaFactory = <T extends z.ZodTypeAny>(
-  eventName: 'session_start' | 'session_end' | 'match_start' | 'match_end' | 'character_selected',
+  eventName: CoreEventName,
   propertiesSchema: T
 ) =>
   maxByteLength(
@@ -131,8 +283,27 @@ export const mvpEventSchema = z.union([
   characterSelectedEventSchema,
 ]);
 
+export const customEventSchema = maxByteLength(
+  eventEnvelopeSchema.extend({
+    event_name: customEventNameSchema,
+    schema_version: z.literal('1.1'),
+    properties: customEventPropertiesSchema,
+  }),
+  customEventMaxBytes,
+  'custom event'
+);
+
+export const telemetryEventSchema = z.union([
+  sessionStartEventSchema,
+  sessionEndEventSchema,
+  matchStartEventSchema,
+  matchEndEventSchema,
+  characterSelectedEventSchema,
+  customEventSchema,
+]);
+
 export const ingestEventsRequestSchema = z.object({
-  events: z.array(mvpEventSchema).min(1).max(10),
+  events: z.array(telemetryEventSchema).min(1).max(10),
 });
 
 const analyticsMetricValueSchema = z.object({
@@ -209,6 +380,65 @@ export const analyticsRetentionCohortsResponseSchema = z.object({
   request_id: requestIdSchema,
 });
 
+const customEventNameMetricSchema = z.object({
+  event_count: z.number().int().nonnegative(),
+  event_name: customEventNameSchema,
+  first_seen: isoDateTimeSchema,
+  last_seen: isoDateTimeSchema,
+});
+
+export const customEventNamesResponseSchema = z.object({
+  data: z.object({
+    days: z.number().int().min(1).max(30),
+    events: z.array(customEventNameMetricSchema),
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+  }),
+  request_id: requestIdSchema,
+});
+
+export const customEventCountsResponseSchema = z.object({
+  data: z.object({
+    days: z.number().int().min(1).max(30),
+    event_name: customEventNameSchema,
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+    points: z.array(
+      z.object({
+        event_count: z.number().int().nonnegative(),
+        metric_date: isoDateSchema,
+      })
+    ),
+  }),
+  request_id: requestIdSchema,
+});
+
+export const customEventRecentResponseSchema = z.object({
+  data: z.object({
+    event_name: customEventNameSchema,
+    events: z.array(
+      z.object({
+        build_id: buildIdSchema,
+        consent_analytics: z.boolean(),
+        event_id: z.string().uuid(),
+        event_name: customEventNameSchema,
+        game_id: gameIdSchema,
+        game_version: gameVersionSchema,
+        locale: localeSchema.nullable(),
+        occurred_at: isoDateTimeSchema,
+        platform: platformSchema,
+        properties: customEventPropertiesSchema,
+        received_at: isoDateTimeSchema,
+        schema_version: z.literal('1.1'),
+      })
+    ),
+    game_id: analyticsQueryGameIdSchema,
+    last_updated: isoDateTimeSchema,
+    limit: z.number().int().min(1).max(100),
+  }),
+  request_id: requestIdSchema,
+});
+
 export type EventEnvelope = z.infer<typeof eventEnvelopeSchema>;
 export type SessionStartEvent = z.infer<typeof sessionStartEventSchema>;
 export type SessionEndEvent = z.infer<typeof sessionEndEventSchema>;
@@ -216,6 +446,8 @@ export type MatchStartEvent = z.infer<typeof matchStartEventSchema>;
 export type MatchEndEvent = z.infer<typeof matchEndEventSchema>;
 export type CharacterSelectedEvent = z.infer<typeof characterSelectedEventSchema>;
 export type MvpEvent = z.infer<typeof mvpEventSchema>;
+export type CustomEvent = z.infer<typeof customEventSchema>;
+export type TelemetryEvent = z.infer<typeof telemetryEventSchema>;
 export type IngestEventsRequest = z.infer<typeof ingestEventsRequestSchema>;
 export type AnalyticsQueryGameId = z.infer<typeof analyticsQueryGameIdSchema>;
 export type AnalyticsSummaryResponse = z.infer<typeof analyticsSummaryResponseSchema>;
@@ -226,3 +458,6 @@ export type AnalyticsCharacterPopularityResponse = z.infer<
 export type AnalyticsRetentionCohortsResponse = z.infer<
   typeof analyticsRetentionCohortsResponseSchema
 >;
+export type CustomEventNamesResponse = z.infer<typeof customEventNamesResponseSchema>;
+export type CustomEventCountsResponse = z.infer<typeof customEventCountsResponseSchema>;
+export type CustomEventRecentResponse = z.infer<typeof customEventRecentResponseSchema>;

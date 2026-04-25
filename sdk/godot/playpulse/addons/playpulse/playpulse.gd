@@ -240,7 +240,7 @@ func _build_event(event_name: String, props: Dictionary) -> Dictionary:
 	return {
 		"event_id": _crypto.generate_uuid_v4(),
 		"event_name": event_name,
-		"schema_version": "1.0",
+		"schema_version": _schema_version_for_event(event_name),
 		"occurred_at": _crypto.iso8601_utc_now(),
 		"session_id": _state["session_id"],
 		"player_id_hash": _state["player_id_hash"],
@@ -252,6 +252,19 @@ func _build_event(event_name: String, props: Dictionary) -> Dictionary:
 		"consent_analytics": _state["consent_enabled"],
 		"properties": props.duplicate(true),
 	}
+
+
+func _schema_version_for_event(event_name: String) -> String:
+	if [
+		"session_start",
+		"session_end",
+		"match_start",
+		"match_end",
+		"character_selected",
+	].has(event_name):
+		return "1.0"
+
+	return "1.1"
 
 
 func _platform_id() -> String:

@@ -1,4 +1,8 @@
-import { ingestEventsRequestSchema, type IngestEventsRequest } from '@playpulse/schemas';
+import {
+  ingestEventsRequestSchema,
+  isCustomEventName,
+  type IngestEventsRequest,
+} from '@playpulse/schemas';
 
 import { HttpError } from '../lib/http-error';
 import { findUnsupportedSchemaVersion } from '../lib/schema-version';
@@ -9,6 +13,26 @@ const formatValidationDetails = (issues: Array<{ message: string; path: (string 
     message: issue.message,
     path: issue.path.join('.'),
   }));
+
+export const countCustomEventCandidates = (payload: unknown) => {
+  if (typeof payload !== 'object' || payload === null || !('events' in payload)) {
+    return 0;
+  }
+
+  const events = (payload as { events?: unknown }).events;
+  if (!Array.isArray(events)) {
+    return 0;
+  }
+
+  return events.filter((event) => {
+    if (typeof event !== 'object' || event === null || !('event_name' in event)) {
+      return false;
+    }
+
+    const eventName = (event as { event_name?: unknown }).event_name;
+    return typeof eventName === 'string' && isCustomEventName(eventName);
+  }).length;
+};
 
 export class EventIngestService {
   constructor(
@@ -35,9 +59,11 @@ export class EventIngestService {
 
     const receivedAt = this.now();
     const acceptedCount = await this.eventsRawRepo.insertBatch(parsed.data.events, apiKeyId, receivedAt);
+    const customEventCount = countCustomEventCandidates(parsed.data);
 
     return {
       acceptedCount,
+      customEventCount,
       payload: parsed.data,
       receivedAt,
     };

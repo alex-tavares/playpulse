@@ -2,7 +2,7 @@
 
 Open-source telemetry and analytics tooling for game teams who want production-grade insight without vendor lock-in.
 
-> **Project status:** The reusable core is at MVP release-candidate scope: Godot SDK MVP, ingest MVP, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, smoke tooling, and CI validation. First-party UI, Metabase automation, and game-specific examples now live in companion repos.
+> **Project status:** The reusable core has production v1 packaging plus v1.1 custom event support: Godot SDK, ingest, warehouse derivations, analytics API, shared packages, local Postgres workflow, raw-event Prisma storage, derived data refresh commands, smoke tooling, and CI validation. First-party UI, Metabase automation, and game-specific examples now live in companion repos.
 
 ## Purpose
 - Give indie teams real gameplay metrics they can trust when tuning balance.
@@ -22,11 +22,12 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - The ingest service in `apps/ingest`, including `POST /events`, `GET /health`, structured logging, auth checks, and Postgres-backed raw event persistence.
 - The warehouse worker in `apps/warehouse-worker`, including date-dimension seeding, demo-data seeding, and refresh flows for sessions, character popularity, retention cohorts, and KPI summary views.
 - The analytics API in `apps/analytics-api`, including health, summary, daily sessions, character popularity, and private retention read endpoints backed by the warehouse structures.
-- The Godot SDK under `sdk/godot/playpulse`, including the `PlayPulse` autoload addon and standalone SDK tests.
+- The analytics API private debug surface for custom event names, counts, and recent events.
+- The Godot SDK under `sdk/godot/playpulse`, including the `PlayPulse` autoload addon, custom events through `track(event_name, props)`, and standalone SDK tests.
 - Local Postgres development workflow via `docker compose`, privacy-safe `/metrics` endpoints, smoke checks, and CI validation for lint, typecheck, and tests.
 
 **Next milestones**
-- Complete the initial production v1 release gates: production Compose packaging, manual deploy evidence, CI/branch-protection confirmation, hosted smoke verification, backup/restore evidence, and human approval before tagging.
+- Prepare the v1.1 release path: CI confirmation, hosted smoke verification, server deploy evidence, and human approval before tagging.
 - Continue the companion BI and example-game story outside this core repo.
 
 ## Repository Layout
@@ -77,13 +78,19 @@ The repository includes runnable backend services, a seeded warehouse flow, and 
 - The internal production proof currently uses an Oracle VM, external Neon Postgres, Docker Compose, and optional Metabase companion.
 - Production deploys are manual for v1; deploy automation is intentionally deferred.
 - Logs are structured JSON on stdout and metrics are exposed through `/metrics`; protect metrics through network or proxy policy.
-- Custom events are deferred to v1.1. Production v1 keeps the fixed MVP event catalog only.
+- Production v1 kept the fixed MVP event catalog only.
+
+## Custom Events v1.1
+- Game teams can call `track("level_end", {...})` with any non-core `snake_case` event name.
+- Custom properties must be flat privacy-safe primitives or arrays of primitives; PII-like keys and nested objects are rejected.
+- Custom events are stored in `events_raw.props_jsonb`, exposed through private debug APIs, and available to BI/raw SQL consumers.
+- Public analytics for custom events, schema registration, allow-listing, and quarantine tables remain deferred.
 
 ## Roadmap Themes
 1. End-to-end telemetry loop from Godot SDK to ingest, warehouse, and analytics API.
 2. Privacy-first storage and read APIs with auditable consent and suppression rules.
 3. Hosting story: local Docker Compose for dev, lightweight cloud deploy guide.
-4. v1.1 custom events with schema registration, privacy-safe validation, SDK ergonomics, and debug/query surfaces.
+4. Custom-event governance and public custom analytics after the v1.1 raw/debug slice.
 
 ## MVP Release Readiness
 - Release readiness evidence and remaining approval gates are tracked in `docs/RELEASE_READINESS.md`.

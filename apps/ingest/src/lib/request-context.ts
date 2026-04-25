@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 export interface RequestContext {
   apiKeyHash: string | null;
+  customEventCandidates: number;
+  customEventsAccepted: number;
   errorCode: string | null;
   eventsWritten: number;
   ipPrefix: string;
@@ -33,6 +35,8 @@ export const createRequestContext = (
   requestId?: string | string[]
 ): RequestContext => ({
   apiKeyHash: null,
+  customEventCandidates: 0,
+  customEventsAccepted: 0,
   errorCode: null,
   eventsWritten: 0,
   ipPrefix,

@@ -3,11 +3,13 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import type { Logger } from 'pino';
 
 import type { AnalyticsConfig } from './config/analytics-config';
+import { createDebugRouter } from './routes/debug-routes';
 import { createHealthRouter } from './routes/health-routes';
 import { createMetricsRouter } from './routes/metrics-routes';
 import { createObservabilityRouter } from './routes/observability-routes';
 import { AnalyticsReadRepo } from './repos/analytics-read-repo';
 import { AnalyticsMetricsService } from './services/analytics-metrics-service';
+import { CustomEventsDebugService } from './services/custom-events-debug-service';
 import { notFoundHandler, sendHttpError, toHttpError } from './lib/http-error';
 import {
   createAnalyticsObservabilityMetrics,
@@ -48,6 +50,7 @@ export const createAnalyticsApp = ({
   const app = express();
   const analyticsReadRepo = new AnalyticsReadRepo(prisma);
   const analyticsMetricsService = new AnalyticsMetricsService(analyticsReadRepo, now);
+  const customEventsDebugService = new CustomEventsDebugService(analyticsReadRepo, now);
 
   app.disable('x-powered-by');
   app.set('trust proxy', config.analyticsTrustProxy);
@@ -115,6 +118,12 @@ export const createAnalyticsApp = ({
     createMetricsRouter({
       analyticsConfig: config,
       analyticsMetricsService,
+    })
+  );
+  app.use(
+    createDebugRouter({
+      analyticsConfig: config,
+      customEventsDebugService,
     })
   );
 

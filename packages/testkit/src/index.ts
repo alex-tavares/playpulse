@@ -1,5 +1,6 @@
 import type {
   CharacterSelectedEvent,
+  CustomEvent,
   IngestEventsRequest,
   MatchEndEvent,
   MatchStartEvent,
@@ -115,6 +116,27 @@ const characterSelectedBase: CharacterSelectedEvent = {
   },
 };
 
+const customEventBase: CustomEvent = {
+  event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+  event_name: 'level_end',
+  schema_version: '1.1',
+  occurred_at: '2025-09-20T19:05:31Z',
+  session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+  player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+  game_id: 'mythclash',
+  game_version: '0.6.2',
+  build_id: 'mc-2025.09.18',
+  platform: 'pc',
+  locale: 'en-US',
+  consent_analytics: true,
+  properties: {
+    completed: true,
+    duration_s: 180,
+    level_id: 'forest_01',
+    rewards: ['coin', 'gem'],
+  },
+};
+
 type EventOverride<T extends { properties: object }> = Partial<Omit<T, 'properties'>> & {
   properties?: Partial<T['properties']>;
 };
@@ -145,6 +167,9 @@ export const createMatchEndEvent = (overrides?: EventOverride<MatchEndEvent>) =>
 
 export const createCharacterSelectedEvent = (overrides?: EventOverride<CharacterSelectedEvent>) =>
   mergeEvent(characterSelectedBase, overrides);
+
+export const createCustomEvent = (overrides?: EventOverride<CustomEvent>) =>
+  mergeEvent(customEventBase, overrides);
 
 export const createIngestBatch = (
   events: IngestEventsRequest['events'] = [createSessionStartEvent()]

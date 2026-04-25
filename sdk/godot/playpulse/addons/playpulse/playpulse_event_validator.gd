@@ -16,6 +16,67 @@ const SEMVER_PATTERN := "^\\d+\\.\\d+\\.\\d+$"
 const DATE_TIME_PATTERN := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
 const MAX_EVENT_BYTES := 2048
 const MAX_PROPERTIES_BYTES := 1536
+const MAX_CUSTOM_PROPERTY_KEYS := 25
+const MAX_CUSTOM_STRING_LENGTH := 128
+const EMAIL_LIKE_PATTERN := "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+const JWT_LIKE_PATTERN := "^eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+const CUSTOM_PROPERTY_ALLOWED_GAMEPLAY_KEYS := [
+	"build_id",
+	"character_id",
+	"item_id",
+	"level_id",
+	"loadout_id",
+	"map_id",
+	"match_id",
+	"mode_id",
+	"quest_id",
+]
+const CUSTOM_PROPERTY_SENSITIVE_KEYS := [
+	"access_token",
+	"address",
+	"api_key",
+	"auth_token",
+	"authorization_header",
+	"chat",
+	"chat_text",
+	"cookie",
+	"device_id",
+	"email",
+	"email_address",
+	"error_message",
+	"ip",
+	"jwt",
+	"message",
+	"name",
+	"password",
+	"phone",
+	"phone_number",
+	"player_id",
+	"player_id_hash",
+	"player_name",
+	"refresh_token",
+	"secret",
+	"session_id",
+	"token",
+	"user_name",
+	"user_id",
+]
+const SENSITIVE_PROPERTY_SUBJECTS := [
+	"access",
+	"account",
+	"api",
+	"auth",
+	"authorization",
+	"device",
+	"email",
+	"phone",
+	"player",
+	"profile",
+	"refresh",
+	"session",
+	"user",
+]
+const SENSITIVE_PROPERTY_SUFFIXES := ["id", "identifier", "hash", "key", "token", "uuid"]
 
 
 func validate_event(event: Dictionary) -> Dictionary:
@@ -33,7 +94,11 @@ func validate_event(event: Dictionary) -> Dictionary:
 	if _byte_size(properties) > MAX_PROPERTIES_BYTES:
 		return _error("properties must be at most %d bytes" % MAX_PROPERTIES_BYTES)
 
-	match String(event["event_name"]):
+	var event_name := String(event["event_name"])
+	if not EVENT_NAMES.has(event_name) and String(event["schema_version"]) != "1.1":
+		return _error("custom events must use schema_version 1.1")
+
+	match event_name:
 		"session_start":
 			return _validate_session_start(properties)
 		"session_end":
@@ -45,7 +110,7 @@ func validate_event(event: Dictionary) -> Dictionary:
 		"character_selected":
 			return _validate_character_selected(properties)
 		_:
-			return _error("Unsupported event_name")
+			return _validate_custom_event(properties)
 
 
 func _validate_common_envelope(event: Dictionary) -> Dictionary:
@@ -70,9 +135,6 @@ func _validate_common_envelope(event: Dictionary) -> Dictionary:
 
 	if not _matches(String(event["event_name"]), SNAKE_CASE):
 		return _error("event_name must be snake_case")
-
-	if not EVENT_NAMES.has(String(event["event_name"])):
-		return _error("event_name must be one of the MVP events")
 
 	if String(event["event_name"]).length() > 48:
 		return _error("event_name must be at most 48 characters")
@@ -238,6 +300,24 @@ func _validate_character_selected(properties: Dictionary) -> Dictionary:
 	return _ok()
 
 
+func _validate_custom_event(properties: Dictionary) -> Dictionary:
+	if properties.keys().size() > MAX_CUSTOM_PROPERTY_KEYS:
+		return _error("custom event properties must have at most %d keys" % MAX_CUSTOM_PROPERTY_KEYS)
+
+	for key in properties.keys():
+		var key_name := String(key)
+		if not _matches(key_name, SNAKE_CASE):
+			return _error("custom event property keys must be snake_case")
+
+		if _is_sensitive_custom_property_key(key_name):
+			return _error("custom event property key is reserved for privacy")
+
+		if not _is_custom_property_value(properties[key]):
+			return _error("custom event property values must be flat primitives or arrays of primitives")
+
+	return _ok()
+
+
 func _byte_size(value: Variant) -> int:
 	return JSON.stringify(value).to_utf8_buffer().size()
 
@@ -283,6 +363,68 @@ func _string_range(value: Variant, min_length: int, max_length: int) -> bool:
 
 	var string_value := String(value)
 	return string_value.length() >= min_length and string_value.length() <= max_length
+
+
+func _is_custom_property_value(value: Variant) -> bool:
+	if _is_custom_primitive(value):
+		return true
+
+	if typeof(value) != TYPE_ARRAY:
+		return false
+
+	for entry in value:
+		if not _is_custom_primitive(entry):
+			return false
+
+	return true
+
+
+func _is_custom_primitive(value: Variant) -> bool:
+	match typeof(value):
+		TYPE_STRING:
+			return _is_safe_custom_string(String(value))
+		TYPE_INT:
+			return true
+		TYPE_FLOAT:
+			return is_finite(float(value))
+		TYPE_BOOL:
+			return true
+		_:
+			return false
+
+
+func _is_sensitive_custom_property_key(key_name: String) -> bool:
+	if CUSTOM_PROPERTY_ALLOWED_GAMEPLAY_KEYS.has(key_name):
+		return false
+
+	if CUSTOM_PROPERTY_SENSITIVE_KEYS.has(key_name):
+		return true
+
+	for subject in SENSITIVE_PROPERTY_SUBJECTS:
+		for suffix in SENSITIVE_PROPERTY_SUFFIXES:
+			var exact_key := "%s_%s" % [subject, suffix]
+			if key_name == exact_key:
+				return true
+			if key_name.begins_with("%s_" % subject) and key_name.ends_with("_%s" % suffix):
+				return true
+
+	return false
+
+
+func _is_safe_custom_string(value: String) -> bool:
+	if value.length() > MAX_CUSTOM_STRING_LENGTH:
+		return false
+
+	if value.to_lower().begins_with("bearer "):
+		return false
+
+	if _matches(value, EMAIL_LIKE_PATTERN):
+		return false
+
+	if _matches(value, JWT_LIKE_PATTERN):
+		return false
+
+	return true
 
 
 func _matches(value: String, pattern: String) -> bool:

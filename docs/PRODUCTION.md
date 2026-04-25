@@ -8,7 +8,7 @@ This guide defines the initial production v1 operating model for PlayPulse. The 
 - Use `compose.prod.yaml` with an external Postgres database supplied by `PLAYPULSE_DATABASE_URL`.
 - Keep real secrets in a host-local `.env.production` file, vault, or platform secret manager. Use `.env.production.example` only as a template.
 - Expose ingest on `4001` and analytics on `4002`; protect `/metrics` through firewall, reverse proxy, or private network policy.
-- Keep custom events out of v1. Production v1 accepts only `session_start`, `session_end`, `match_start`, `match_end`, and `character_selected`.
+- Production v1 accepted only `session_start`, `session_end`, `match_start`, `match_end`, and `character_selected`. v1.1 also accepts guarded custom events with `schema_version = "1.1"` and private debug APIs.
 
 ## Manual Deploy Runbook
 
