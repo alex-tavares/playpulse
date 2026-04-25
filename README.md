@@ -26,7 +26,7 @@ Open-source telemetry and analytics tooling for game teams who want production-g
 - Local Postgres development workflow via `docker compose`, privacy-safe `/metrics` endpoints, smoke checks, and CI validation for lint, typecheck, and tests.
 
 **Next milestones**
-- Run final CI and hosted smoke verification, then tag the MVP release after human approval.
+- Complete the initial production v1 release gates: production Compose packaging, manual deploy evidence, CI/branch-protection confirmation, hosted smoke verification, backup/restore evidence, and human approval before tagging.
 - Continue the companion BI and example-game story outside this core repo.
 
 ## Repository Layout
@@ -72,10 +72,18 @@ The repository includes runnable backend services, a seeded warehouse flow, and 
 - For game-specific validation flows such as MythTag, use the companion examples repo.
 - For internal analysis with Metabase, use the BI companion repo against the warehouse structures (`mv_metrics_summary_current`, `mv_sessions_daily`, `mv_character_popularity`, `retention_cohorts`).
 
+## Production v1
+- Production v1 is self-hostable and provider-agnostic. Use `compose.prod.yaml`, `.env.production.example`, and `docs/PRODUCTION.md` for the portable production path.
+- The internal production proof currently uses an Oracle VM, external Neon Postgres, Docker Compose, and optional Metabase companion.
+- Production deploys are manual for v1; deploy automation is intentionally deferred.
+- Logs are structured JSON on stdout and metrics are exposed through `/metrics`; protect metrics through network or proxy policy.
+- Custom events are deferred to v1.1. Production v1 keeps the fixed MVP event catalog only.
+
 ## Roadmap Themes
 1. End-to-end telemetry loop from Godot SDK to ingest, warehouse, and analytics API.
 2. Privacy-first storage and read APIs with auditable consent and suppression rules.
 3. Hosting story: local Docker Compose for dev, lightweight cloud deploy guide.
+4. v1.1 custom events with schema registration, privacy-safe validation, SDK ergonomics, and debug/query surfaces.
 
 ## MVP Release Readiness
 - Release readiness evidence and remaining approval gates are tracked in `docs/RELEASE_READINESS.md`.

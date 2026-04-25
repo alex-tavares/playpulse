@@ -13,9 +13,14 @@
 
 ## Deployment Checklist
 - [ ] Merge PR with 2 approvals and green CI
+- [ ] Confirm production `.env.production` exists on the host and contains no placeholder secrets
+- [ ] Build production images with `docker compose -f compose.prod.yaml build ingest analytics-api warehouse-worker`
+- [ ] Run `prisma migrate deploy` from the production image
+- [ ] Start `ingest` and `analytics-api`, then run the `warehouse-worker` job profile
 - [ ] Verify staging deploy (ingest health, analytics health, warehouse refresh)
 - [ ] Run `pnpm smoke` against staging with ingest, analytics, private retention, and optional Metabase URLs configured
 - [ ] Confirm `/metrics` responds for ingest and analytics through the intended protected network path
+- [ ] Capture deployed commit SHA, smoke output, and container status as release evidence
 - [ ] Tag release (`vYY.MM.DD`) and confirm prod deploy
 - [ ] Monitor alerts for 30 minutes post-release
 
@@ -49,6 +54,13 @@
 - [ ] Run smoke tests (ingest, analytics queries)
 - [ ] Re-enable ingest and monitor backlog
 - [ ] Document incident + remediation
+
+## Production Rollback Checklist
+- [ ] Identify the last known good release tag or commit
+- [ ] Redeploy that revision with `compose.prod.yaml`
+- [ ] Do not manually reverse database migrations
+- [ ] Run warehouse refresh and hosted smoke checks
+- [ ] Preserve failing release logs and validation output for the incident note
 
 ## Secrets Rotation Checklist
 - [ ] Schedule rotation window and notify team
