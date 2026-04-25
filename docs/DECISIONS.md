@@ -21,3 +21,4 @@
 - 2026-04-09: Narrowed the main PlayPulse repo to the reusable telemetry core: Godot SDK, ingest, warehouse, analytics API, and generic docs stay here; first-party UI is removed from the core repo.
 - 2026-04-09: Split Metabase automation into a companion repo (`playpulse-bi`) so BI setup remains optional and connects directly to Postgres rather than through HTTP.
 - 2026-04-09: Split game-specific validation helpers and examples into a companion repo (`playpulse-examples`) so the core SDK remains game-agnostic.
+- 2026-04-24: Initial production v1 is a self-hostable hardening release using Docker Compose, external Postgres, manual deploy runbooks, logs plus metrics observability, and the fixed five-event catalog. Custom events are explicitly deferred to v1.1.

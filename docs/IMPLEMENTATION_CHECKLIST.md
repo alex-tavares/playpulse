@@ -112,12 +112,12 @@ The main remaining work is release hardening and finish-line verification. The r
 - [x] Add metrics for ingest, analytics, and materialized-view refresh aligned with RFC-005
 - [x] Add request IDs and trace propagation
 - [x] Ensure log fields align with RFC-005 and privacy requirements
-- [ ] Add staging and prod environment config documentation as code or templates
-- [ ] Document secret handling and local `.env` setup
-- [ ] Add a deployable local stack for demo and staging parity where feasible
+- [x] Add staging and prod environment config documentation as code or templates
+- [x] Document secret handling and local `.env` setup
+- [x] Add a deployable production Compose stack for self-hosted staging parity
 - [x] Add a smoke-test checklist for staging
 - [ ] Align actual branch protection and CI expectations with the documented workflow
-- [ ] Confirm retention, backup, and restore procedures are represented in repo docs
+- [x] Confirm retention, backup, and restore procedures are represented in repo docs
 
 ## Phase 9 - Finish Line
 
@@ -135,7 +135,7 @@ The main remaining work is release hardening and finish-line verification. The r
 
 - [ ] C# bindings
 - [ ] Additional Godot export targets
-- [ ] Custom event schema registration and quarantine flow
+- [ ] v1.1 custom event schema registration, validation, SDK ergonomics, debug/query surfaces, and quarantine or rejection flow
 - [ ] Dimension tables and richer metadata joins
 - [ ] Advanced analytics beyond the current MVP
 - [ ] Optional cloud deployment hardening and multi-region concerns

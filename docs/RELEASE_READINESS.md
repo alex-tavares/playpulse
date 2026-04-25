@@ -10,6 +10,7 @@ This note captures the MVP wrap-up state before final human release approval. Th
 - Warehouse refresh commands emit `duration_ms` and `refreshed_at` fields in their JSON output.
 - `pnpm smoke` validates ingest health, analytics health, public analytics, service metrics, optional private retention, and optional Metabase reachability.
 - Hosted Oracle/Neon demo data has been seeded and refreshed for MythClash and MythTag.
+- Production Dockerfiles, a provider-neutral `compose.prod.yaml`, environment examples, and manual production runbooks are documented for the initial production version.
 
 ## Verification Evidence
 
@@ -27,7 +28,9 @@ Last local verification: 2026-04-24.
 - CI must be green for the release branch or final PR.
 - Branch protection and required checks must be confirmed in GitHub before tagging.
 - Secrets, backups, and retention operations must be confirmed against the deployment environment.
+- The internal production host must run a tagged commit or approved release commit, with hosted smoke evidence recorded.
 
 ## Deferred Beyond MVP
 
-- Full OpenTelemetry tracing, Jaeger, alert routing, WAF/CDN, backup automation, public status pages, C# bindings, additional Godot export targets, custom event registration, and richer analytics.
+- Custom events are deferred to v1.1 and must include schema registration or allow-listing, privacy-safe validation, SDK ergonomics, debug/query surfaces, and quarantine or rejection behavior.
+- Full OpenTelemetry tracing, Jaeger, alert routing, WAF/CDN, backup automation, public status pages, C# bindings, additional Godot export targets, and richer analytics remain post-v1.

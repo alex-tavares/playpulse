@@ -453,6 +453,7 @@ describe('warehouse worker integration', () => {
 
   it('refreshes the current metrics summary for recent consented events', async () => {
     const now = new Date();
+    const today = startOfUtcDay(now);
     const { repo, rollingRefreshService } = createWarehouseHarness(prisma, now);
     const events: DemoSeedEvent[] = [];
 
@@ -479,7 +480,7 @@ describe('warehouse worker integration', () => {
     }
 
     for (let index = 0; index < 11; index += 1) {
-      const occurredAt = new Date(now.getTime() - index * 25 * 60 * 1000);
+      const occurredAt = new Date(today.getTime() + (12 * 60 + index) * 60 * 1000);
 
       events.push({
         apiKeyId: 'test-mythclash',

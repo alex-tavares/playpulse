@@ -2,6 +2,8 @@
 
 Set these variables in deployment environments to align with RFC-003 and RFC-004 targets. Values shown are the current documented defaults used by the shared config package plus the ingest, analytics, and warehouse flows in the core PlayPulse repo.
 
+Use `.env.example` for local development defaults and `.env.production.example` as the production template. Real production values must live in a host-local `.env.production`, vault, or platform secret manager and must never be committed.
+
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PLAYPULSE_INGEST_SLO_P95_MS` | `500` | Ingest p95 latency objective (ms). |
@@ -45,3 +47,13 @@ Companion repos own additional configuration:
 - Game-specific example and validation variables now live in [alex-tavares/playpulse-examples](https://github.com/alex-tavares/playpulse-examples).
 
 > NOTE: update these values via infrastructure configuration; code should read from environment with documented defaults.
+
+## Production Compose
+
+`compose.prod.yaml` reads runtime values from `.env.production` and builds the three production services from repo Dockerfiles:
+
+- `ingest` exposes `4001`.
+- `analytics-api` exposes `4002`.
+- `warehouse-worker` runs under the `jobs` profile for refresh and seed operations.
+
+The production template expects an external Postgres-compatible database through `PLAYPULSE_DATABASE_URL`. It does not start a database container.
