@@ -13,10 +13,14 @@ func _ready() -> void:
 func _run_tests() -> void:
 	var tests := [
 		_test_config_validation,
+		_test_public_client_config_validation,
 		_test_generate_mvp_envelopes,
+		_test_custom_events,
 		_test_invalid_properties_are_rejected,
 		_test_queue_cap_and_batch_flush,
 		_test_signing_headers_and_hmac_shape,
+		_test_public_client_fetches_bearer_token_before_flush,
+		_test_public_client_token_failure_preserves_queue,
 		_test_consent_disable_clears_queue_and_persistence,
 		_test_player_identifier_rotates_after_flush,
 		_test_persistence_replay_on_configure,
@@ -37,11 +41,36 @@ func _test_config_validation() -> void:
 	var valid_result := parser.parse_config(_base_config())
 	_assert(valid_result["ok"], "configure should accept a valid base config")
 
-	var invalid_result := parser.parse_config({
-		"api_key": "local-key",
-		"signing_secret": "local-secret",
-	})
+	var invalid_result := (
+		parser
+		. parse_config(
+			{
+				"api_key": "local-key",
+				"signing_secret": "local-secret",
+			}
+		)
+	)
 	_assert(not invalid_result["ok"], "configure should reject missing required keys")
+
+
+func _test_public_client_config_validation() -> void:
+	var parser := ConfigParser.new()
+	var valid_result := parser.parse_config(_base_public_client_config())
+	_assert(valid_result["ok"], "configure should accept a valid public client config")
+
+	var invalid_result := (
+		parser
+		. parse_config(
+			{
+				"auth_mode": "public_client",
+				"game_id": "mythtag",
+				"game_version": "0.3.0",
+				"build_id": "mt-dev-local",
+				"ingest_base_url": "http://localhost:4001",
+			}
+		)
+	)
+	_assert(not invalid_result["ok"], "public client config should require client_id")
 
 
 func _test_generate_mvp_envelopes() -> void:
@@ -53,8 +82,12 @@ func _test_generate_mvp_envelopes() -> void:
 		PlayPulse.track("session_start", _session_start_props()) == OK,
 		"session_start should enqueue"
 	)
-	_assert(PlayPulse.track("session_end", _session_end_props()) == OK, "session_end should enqueue")
-	_assert(PlayPulse.track("match_start", _match_start_props()) == OK, "match_start should enqueue")
+	_assert(
+		PlayPulse.track("session_end", _session_end_props()) == OK, "session_end should enqueue"
+	)
+	_assert(
+		PlayPulse.track("match_start", _match_start_props()) == OK, "match_start should enqueue"
+	)
 	_assert(PlayPulse.track("match_end", _match_end_props()) == OK, "match_end should enqueue")
 	_assert(
 		PlayPulse.track("character_selected", _character_selected_props()) == OK,
@@ -70,17 +103,86 @@ func _test_generate_mvp_envelopes() -> void:
 		_assert(event.has("player_id_hash"), "player_id_hash should exist")
 		_assert(event["game_id"] == "mythtag", "game_id should be propagated")
 
+
 func _test_invalid_properties_are_rejected() -> void:
 	_install_fake_transport(false)
 	_reset_sdk("invalid")
 	PlayPulse.configure(_base_config())
 
-	var result := PlayPulse.track("session_start", {
-		"launch_reason": "fresh_launch",
-		"connection_mode": "online",
-		"timezone_offset_min": "bad",
-	})
+	var result := (
+		PlayPulse
+		. track(
+			"session_start",
+			{
+				"launch_reason": "fresh_launch",
+				"connection_mode": "online",
+				"timezone_offset_min": "bad",
+			}
+		)
+	)
 	_assert(result == ERR_INVALID_PARAMETER, "Invalid properties should be rejected")
+
+
+func _test_custom_events() -> void:
+	_install_fake_transport(false)
+	_reset_sdk("custom")
+	PlayPulse.configure(_base_config())
+
+	var result := (
+		PlayPulse
+		. track(
+			"level_end",
+			{
+				"completed": true,
+				"duration_s": 180,
+				"level_id": "forest_01",
+				"rewards": ["coin", "gem"],
+			}
+		)
+	)
+	_assert(result == OK, "valid custom event should enqueue")
+
+	var queue := PlayPulse._queue_snapshot_for_testing()
+	_assert(queue.size() == 1, "custom event should be queued")
+	_assert(queue[0]["event_name"] == "level_end", "custom event name should be preserved")
+	_assert(queue[0]["schema_version"] == "1.1", "custom events should use schema_version 1.1")
+
+	_assert(
+		PlayPulse.track("invalidName", {"value": 1}) == ERR_INVALID_PARAMETER,
+		"invalid custom event names should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"nested": {"bad": true}}) == ERR_INVALID_PARAMETER,
+		"nested custom event properties should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"email": "player@example.com"}) == ERR_INVALID_PARAMETER,
+		"PII-like custom event property keys should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"player_id": "raw-player-123"}) == ERR_INVALID_PARAMETER,
+		"raw identifier custom event property keys should be rejected"
+	)
+	_assert(
+		PlayPulse.track("level_end", {"level_id": "player@example.com"}) == ERR_INVALID_PARAMETER,
+		"email-like custom event property values should be rejected"
+	)
+	_assert(
+		(
+			PlayPulse.track(
+				"level_end", {"level_id": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature"}
+			)
+			== ERR_INVALID_PARAMETER
+		),
+		"JWT-like custom event property values should be rejected"
+	)
+	var long_value := ""
+	for _index in range(129):
+		long_value += "x"
+	_assert(
+		PlayPulse.track("level_end", {"level_id": long_value}) == ERR_INVALID_PARAMETER,
+		"long custom event string values should be rejected"
+	)
 
 
 func _test_queue_cap_and_batch_flush() -> void:
@@ -89,11 +191,17 @@ func _test_queue_cap_and_batch_flush() -> void:
 	PlayPulse.configure(_base_config())
 
 	for index in range(200):
-		var result := PlayPulse.track("session_start", {
-			"launch_reason": "resume",
-			"connection_mode": "online",
-			"timezone_offset_min": index % 60,
-		})
+		var result := (
+			PlayPulse
+			. track(
+				"session_start",
+				{
+					"launch_reason": "resume",
+					"connection_mode": "online",
+					"timezone_offset_min": index % 60,
+				}
+			)
+		)
 		_assert(result == OK, "Queue should accept event %d" % index)
 
 	_assert(
@@ -110,7 +218,9 @@ func _test_signing_headers_and_hmac_shape() -> void:
 	PlayPulse.configure(_base_config())
 
 	for _index in range(10):
-		_assert(PlayPulse.track("session_start", _session_start_props()) == OK, "Batch should enqueue")
+		_assert(
+			PlayPulse.track("session_start", _session_start_props()) == OK, "Batch should enqueue"
+		)
 
 	await get_tree().process_frame
 
@@ -129,10 +239,64 @@ func _test_signing_headers_and_hmac_shape() -> void:
 	var crypto := CryptoHelper.new()
 	var expected_signature := crypto.hmac_sha256_base64(
 		"local-secret",
-		"%s\n%s\n%s"
-		% [header_map["X-Request-Timestamp"], header_map["X-Nonce"], request["body"]]
+		"%s\n%s\n%s" % [header_map["X-Request-Timestamp"], header_map["X-Nonce"], request["body"]]
 	)
 	_assert(header_map["X-Signature"] == expected_signature, "Signature must match the raw body")
+
+
+func _test_public_client_fetches_bearer_token_before_flush() -> void:
+	var transport := _install_fake_transport(false)
+	(
+		transport
+		. queue_response(
+			OK,
+			200,
+			'{"data":{"token":"test-public-token","expires_at":"2030-01-01T00:00:00.000Z","refresh_after_s":3000}}'
+		)
+	)
+	_reset_sdk("public-client")
+	PlayPulse.configure(_base_public_client_config())
+
+	for _index in range(10):
+		_assert(
+			PlayPulse.track("session_start", _session_start_props()) == OK, "Batch should enqueue"
+		)
+
+	_assert(transport.requests.size() == 1, "Public client should request a token first")
+	_assert(
+		transport.requests[0]["url"].ends_with("/client-tokens"),
+		"Public client should call /client-tokens"
+	)
+	transport.complete_next()
+	await get_tree().process_frame
+
+	_assert(transport.requests.size() == 2, "Public client should send events after token issue")
+	var event_headers := _headers_to_map(transport.requests[1]["headers"])
+	_assert(
+		event_headers["Authorization"] == "Bearer test-public-token",
+		"Public client events should use bearer auth"
+	)
+	_assert(not event_headers.has("X-Signature"), "Public client events should not use HMAC")
+	_assert(not event_headers.has("X-Api-Key"), "Public client events should not include API keys")
+
+
+func _test_public_client_token_failure_preserves_queue() -> void:
+	var transport := _install_fake_transport(false)
+	transport.queue_response(OK, 401, '{"error":{"code":"unauthorized"}}')
+	_reset_sdk("public-client-token-failure")
+	PlayPulse.configure(_base_public_client_config())
+
+	for _index in range(10):
+		_assert(
+			PlayPulse.track("session_start", _session_start_props()) == OK, "Batch should enqueue"
+		)
+
+	transport.complete_next()
+	await get_tree().process_frame
+	_assert(
+		PlayPulse._queue_snapshot_for_testing().size() == 10,
+		"Token failure should preserve queued events"
+	)
 
 
 func _test_consent_disable_clears_queue_and_persistence() -> void:
@@ -143,7 +307,9 @@ func _test_consent_disable_clears_queue_and_persistence() -> void:
 	PlayPulse.track("match_start", _match_start_props())
 
 	_assert(PlayPulse.set_consent(false) == OK, "set_consent(false) should succeed")
-	_assert(PlayPulse._queue_snapshot_for_testing().is_empty(), "Queue should be cleared on opt-out")
+	_assert(
+		PlayPulse._queue_snapshot_for_testing().is_empty(), "Queue should be cleared on opt-out"
+	)
 
 	var persistence := Persistence.new()
 	persistence.set_root_path(_test_root("consent"))
@@ -329,6 +495,22 @@ func _base_config() -> Dictionary:
 		"build_id": "mt-dev-local",
 		"ingest_base_url": "http://localhost:4001",
 		"locale": "pt-BR",
+		"player_seed": "sdk-test-player",
+		"initial_consent": true,
+		"flush_interval_sec": 5,
+	}
+
+
+func _base_public_client_config() -> Dictionary:
+	return {
+		"auth_mode": "public_client",
+		"client_id": "mythtag-windows-060",
+		"game_id": "mythtag",
+		"game_version": "0.3.0",
+		"build_id": "mt-dev-local",
+		"ingest_base_url": "http://localhost:4001",
+		"locale": "pt-BR",
+		"platform_channel": "windows",
 		"player_seed": "sdk-test-player",
 		"initial_consent": true,
 		"flush_interval_sec": 5,

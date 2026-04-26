@@ -131,11 +131,24 @@ The main remaining work is release hardening and finish-line verification. The r
 - [x] Verify the companion BI and examples repos still integrate cleanly with the core stack
 - [ ] Complete the MVP release-readiness checklist
 
+## Phase 10 - v1.1 Custom Events
+
+- [x] Extend shared schemas for open custom event names with reserved core event names
+- [x] Add privacy-safe custom property validation and byte/key caps
+- [x] Preserve strict core event validation
+- [x] Persist accepted custom events into `events_raw.props_jsonb`
+- [x] Add aggregate ingest metrics for accepted/rejected custom events without event-name labels
+- [x] Update the Godot SDK to emit valid custom events through `track(event_name, props)`
+- [x] Add private analytics debug endpoints for custom event names, counts, and recent events
+- [x] Keep public analytics endpoints unchanged
+- [x] Document custom event examples, privacy guardrails, and deferred public reporting
+- [x] Add schema, ingest, analytics, and SDK regression coverage
+
 ## Post-MVP Backlog
 
 - [ ] C# bindings
 - [ ] Additional Godot export targets
-- [ ] v1.1 custom event schema registration, validation, SDK ergonomics, debug/query surfaces, and quarantine or rejection flow
+- [ ] Custom event schema registry, event allow-listing, or quarantine table if pilot teams need governance beyond v1.1 guardrails
 - [ ] Dimension tables and richer metadata joins
 - [ ] Advanced analytics beyond the current MVP
 - [ ] Optional cloud deployment hardening and multi-region concerns

@@ -1,5 +1,34 @@
 import { PrismaClient } from '@prisma/client';
 
+export interface CustomEventCountRow {
+  eventCount: number;
+  lastRefreshedAt: Date;
+  metricDate: Date;
+}
+
+export interface CustomEventNameRow {
+  eventCount: number;
+  eventName: string;
+  firstSeen: Date;
+  lastRefreshedAt: Date;
+  lastSeen: Date;
+}
+
+export interface CustomEventRecentRow {
+  buildId: string;
+  consentAnalytics: boolean;
+  eventId: string;
+  eventName: string;
+  gameId: 'mythclash' | 'mythtag';
+  gameVersion: string;
+  locale: string | null;
+  occurredAt: Date;
+  platform: 'pc' | 'mac' | 'linux';
+  propsJsonb: unknown;
+  receivedAt: Date;
+  schemaVersion: string;
+}
+
 export interface CharacterPopularityRow {
   characterId: string;
   gameId: string;
@@ -46,6 +75,94 @@ export interface SessionsDailyRow {
 
 export class AnalyticsReadRepo {
   public constructor(private readonly prisma: PrismaClient) {}
+
+  public async getCustomEventCountRows(params: {
+    endDate: Date;
+    eventName: string;
+    gameId?: 'mythclash' | 'mythtag';
+    startDate: Date;
+  }) {
+    const gameId = params.gameId ?? null;
+
+    return this.prisma.$queryRaw<CustomEventCountRow[]>`
+      SELECT
+        COUNT(*)::INTEGER AS "eventCount",
+        MAX("received_at") AS "lastRefreshedAt",
+        DATE("occurred_at") AS "metricDate"
+      FROM "events_raw"
+      WHERE "occurred_at" >= ${params.startDate}
+        AND "occurred_at" < ${params.endDate}
+        AND "consent_analytics" = TRUE
+        AND "event_name" = ${params.eventName}
+        AND "schema_version" = '1.1'
+        AND (${gameId}::TEXT IS NULL OR "game_id" = ${gameId})
+      GROUP BY DATE("occurred_at")
+      ORDER BY "metricDate" ASC
+    `;
+  }
+
+  public async getCustomEventNameRows(params: {
+    endDate: Date;
+    gameId?: 'mythclash' | 'mythtag';
+    startDate: Date;
+  }) {
+    const gameId = params.gameId ?? null;
+
+    return this.prisma.$queryRaw<CustomEventNameRow[]>`
+      SELECT
+        COUNT(*)::INTEGER AS "eventCount",
+        "event_name" AS "eventName",
+        MIN("occurred_at") AS "firstSeen",
+        MAX("received_at") AS "lastRefreshedAt",
+        MAX("occurred_at") AS "lastSeen"
+      FROM "events_raw"
+      WHERE "occurred_at" >= ${params.startDate}
+        AND "occurred_at" < ${params.endDate}
+        AND "consent_analytics" = TRUE
+        AND "schema_version" = '1.1'
+        AND "event_name" NOT IN (
+          'session_start',
+          'session_end',
+          'match_start',
+          'match_end',
+          'character_selected'
+        )
+        AND (${gameId}::TEXT IS NULL OR "game_id" = ${gameId})
+      GROUP BY "event_name"
+      ORDER BY "eventCount" DESC, "eventName" ASC
+    `;
+  }
+
+  public async getCustomEventRecentRows(params: {
+    eventName: string;
+    gameId?: 'mythclash' | 'mythtag';
+    limit: number;
+  }) {
+    const gameId = params.gameId ?? null;
+
+    return this.prisma.$queryRaw<CustomEventRecentRow[]>`
+      SELECT
+        "build_id" AS "buildId",
+        "consent_analytics" AS "consentAnalytics",
+        "event_id" AS "eventId",
+        "event_name" AS "eventName",
+        "game_id" AS "gameId",
+        "game_version" AS "gameVersion",
+        "locale",
+        "occurred_at" AS "occurredAt",
+        "platform",
+        "props_jsonb" AS "propsJsonb",
+        "received_at" AS "receivedAt",
+        "schema_version" AS "schemaVersion"
+      FROM "events_raw"
+      WHERE "consent_analytics" = TRUE
+        AND "event_name" = ${params.eventName}
+        AND "schema_version" = '1.1'
+        AND (${gameId}::TEXT IS NULL OR "game_id" = ${gameId})
+      ORDER BY "occurred_at" DESC, "event_id" ASC
+      LIMIT ${params.limit}
+    `;
+  }
 
   public async getCharacterPopularityRows(params: {
     endDate: string;

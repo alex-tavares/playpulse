@@ -22,3 +22,5 @@
 - 2026-04-09: Split Metabase automation into a companion repo (`playpulse-bi`) so BI setup remains optional and connects directly to Postgres rather than through HTTP.
 - 2026-04-09: Split game-specific validation helpers and examples into a companion repo (`playpulse-examples`) so the core SDK remains game-agnostic.
 - 2026-04-24: Initial production v1 is a self-hostable hardening release using Docker Compose, external Postgres, manual deploy runbooks, logs plus metrics observability, and the fixed five-event catalog. Custom events are explicitly deferred to v1.1.
+- 2026-04-25: v1.1 custom events are open-with-guardrails: no pre-registration, non-core `snake_case` event names, flat privacy-safe properties, rejection for invalid payloads, raw storage in `events_raw`, private debug APIs, and no public custom analytics or schema registry.
+- 2026-04-25: v1.2 adds client-safe public telemetry auth for browser and native public builds through short-lived bearer tokens; HMAC remains reserved for trusted/internal clients.

@@ -2,20 +2,23 @@ import type { RequestHandler } from 'express';
 
 import { HttpError } from '../lib/http-error';
 import type { IngestResponseLocals } from '../lib/request-context';
+import { ConfiguredRateLimiter } from '../lib/configured-rate-limiter';
 import { DualWindowRateLimiter } from '../lib/rate-limiter';
-import { EventIngestService } from '../services/event-ingest-service';
+import { countCustomEventCandidates, EventIngestService } from '../services/event-ingest-service';
 import { IngestAuthService } from '../services/ingest-auth-service';
 
 interface EventsControllerDependencies {
   authService: IngestAuthService;
   eventIngestService: EventIngestService;
   keyRateLimiter: DualWindowRateLimiter;
+  publicClientEventRateLimiter: ConfiguredRateLimiter;
 }
 
 export const createEventsController = ({
   authService,
   eventIngestService,
   keyRateLimiter,
+  publicClientEventRateLimiter,
 }: EventsControllerDependencies): RequestHandler<never, unknown, Buffer, unknown, IngestResponseLocals> =>
   async (request, response, next) => {
     try {
@@ -25,7 +28,13 @@ export const createEventsController = ({
       const authenticatedRequest = authService.authenticate(request.headers, rawBody);
       response.locals.context.apiKeyHash = authenticatedRequest.apiKeyHash;
 
-      const keyDecision = keyRateLimiter.consume(authenticatedRequest.apiKey.keyId);
+      const keyDecision =
+        authenticatedRequest.authMode === 'bearer_token' && authenticatedRequest.publicClient
+          ? publicClientEventRateLimiter.consume(
+              authenticatedRequest.keyId,
+              authenticatedRequest.publicClient.eventRateLimit
+            )
+          : keyRateLimiter.consume(authenticatedRequest.keyId);
       if (!keyDecision.allowed) {
         response.locals.context.rateLimited = true;
         throw new HttpError(429, 'rate_limited_key', 'API key rate limit exceeded', {
@@ -42,8 +51,14 @@ export const createEventsController = ({
         throw new HttpError(400, 'bad_request', 'Request body is not valid JSON');
       }
 
-      const result = await eventIngestService.ingest(parsedJson, authenticatedRequest.apiKey.keyId);
+      response.locals.context.customEventCandidates = countCustomEventCandidates(parsedJson);
+      const result = await eventIngestService.ingest(
+        parsedJson,
+        authenticatedRequest.keyId,
+        authenticatedRequest.gameId
+      );
       response.locals.context.eventsWritten = result.acceptedCount;
+      response.locals.context.customEventsAccepted = result.customEventCount;
 
       response.status(202).json({
         data: {

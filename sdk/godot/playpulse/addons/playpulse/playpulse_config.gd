@@ -8,14 +8,18 @@ const GAME_IDS := ["mythclash", "mythtag"]
 
 func parse_config(raw_config: Dictionary) -> Dictionary:
 	var required_keys := [
-		"api_key",
-		"signing_secret",
 		"game_id",
 		"game_version",
 		"build_id",
 		"ingest_base_url",
 	]
 	var parsed := {}
+	var auth_mode := _as_optional_string(raw_config.get("auth_mode", ""))
+	if auth_mode == "":
+		auth_mode = "hmac"
+	if auth_mode not in ["hmac", "public_client"]:
+		return _error("auth_mode must be hmac or public_client")
+	parsed["auth_mode"] = auth_mode
 
 	for key in required_keys:
 		if not raw_config.has(key):
@@ -26,6 +30,29 @@ func parse_config(raw_config: Dictionary) -> Dictionary:
 			return _error("Config key %s must be a non-empty string" % key)
 
 		parsed[key] = string_value
+
+	if auth_mode == "hmac":
+		for key in ["api_key", "signing_secret"]:
+			if not raw_config.has(key):
+				return _error("Missing required config key: %s" % key)
+
+			var string_value := _as_non_empty_string(raw_config[key])
+			if string_value == "":
+				return _error("Config key %s must be a non-empty string" % key)
+
+			parsed[key] = string_value
+	else:
+		for key in ["client_id", "platform_channel"]:
+			if not raw_config.has(key):
+				return _error("Missing required config key: %s" % key)
+
+			var string_value := _as_non_empty_string(raw_config[key])
+			if string_value == "":
+				return _error("Config key %s must be a non-empty string" % key)
+
+			parsed[key] = string_value
+		parsed["api_key"] = ""
+		parsed["signing_secret"] = ""
 
 	if not GAME_IDS.has(parsed["game_id"]):
 		return _error("game_id must be one of: %s" % ", ".join(GAME_IDS))
@@ -71,10 +98,15 @@ func parse_config(raw_config: Dictionary) -> Dictionary:
 			return _error("flush_interval_sec must be an integer")
 
 		var flush_interval_sec := int(raw_config["flush_interval_sec"])
-		if flush_interval_sec < MIN_FLUSH_INTERVAL_SEC or flush_interval_sec > MAX_FLUSH_INTERVAL_SEC:
+		if (
+			flush_interval_sec < MIN_FLUSH_INTERVAL_SEC
+			or flush_interval_sec > MAX_FLUSH_INTERVAL_SEC
+		):
 			return _error(
-				"flush_interval_sec must be between %d and %d"
-				% [MIN_FLUSH_INTERVAL_SEC, MAX_FLUSH_INTERVAL_SEC]
+				(
+					"flush_interval_sec must be between %d and %d"
+					% [MIN_FLUSH_INTERVAL_SEC, MAX_FLUSH_INTERVAL_SEC]
+				)
 			)
 
 		parsed["flush_interval_sec"] = flush_interval_sec

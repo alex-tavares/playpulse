@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   createCharacterSelectedEvent,
+  createCustomEvent,
   createMatchEndEvent,
   createSessionEndEvent,
   createSessionStartEvent,
@@ -383,7 +384,86 @@ const seedAnalyticsFixture = async (prisma: PrismaClient, now: Date) => {
     weekStart: olderWeek,
   });
 
+  for (let index = 0; index < 3; index += 1) {
+    events.push({
+      apiKeyId: 'test-mythtag',
+      event: createCustomEvent({
+        build_id: 'mt-2026.04.05',
+        event_id: randomUUID(),
+        game_id: 'mythtag',
+        game_version: '0.3.0',
+        locale: 'pt-BR',
+        occurred_at: new Date(
+          Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 22, index, 0)
+        ).toISOString(),
+        player_id_hash: createPlayerHash(`custom:level_end:${index}`),
+        properties: {
+          completed: index % 2 === 0,
+          duration_s: 180 + index,
+          level_id: 'forest_01',
+        },
+        session_id: randomUUID(),
+      }),
+    });
+  }
+
+  events.push({
+    apiKeyId: 'test-mythclash',
+    event: createCustomEvent({
+      build_id: 'mc-2026.04.05',
+      event_id: randomUUID(),
+      event_name: 'quest_started',
+      game_id: 'mythclash',
+      occurred_at: new Date(
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 0, 0)
+      ).toISOString(),
+      player_id_hash: createPlayerHash('custom:quest_started:0'),
+      properties: {
+        quest_id: 'intro_path',
+      },
+      session_id: randomUUID(),
+    }),
+  });
+
+  events.push({
+    apiKeyId: 'test-mythtag',
+    event: createCustomEvent({
+      consent_analytics: false,
+      event_id: randomUUID(),
+      game_id: 'mythtag',
+      occurred_at: new Date(
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 5, 0)
+      ).toISOString(),
+      player_id_hash: createPlayerHash('custom:level_end:optout'),
+      session_id: randomUUID(),
+    }),
+  });
+
   await repo.seedRawEvents(events, 'integration_test');
+  await prisma.eventRaw.create({
+    data: {
+      apiKeyId: 'test-mythtag',
+      buildId: 'mt-2026.04.05',
+      consentAnalytics: true,
+      eventId: randomUUID(),
+      eventName: 'legacy_custom',
+      gameId: 'mythtag',
+      gameVersion: '0.3.0',
+      ingestSource: 'integration_test',
+      locale: 'pt-BR',
+      occurredAt: new Date(
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 10, 0)
+      ),
+      platform: 'pc',
+      playerIdHash: createPlayerHash('legacy:custom:0'),
+      propsJsonb: {
+        level_id: 'legacy_level',
+      },
+      receivedAt: now,
+      schemaVersion: '1.0',
+      sessionId: randomUUID(),
+    },
+  });
   await rollingRefreshService.run();
   await retentionRefreshService.run();
 };
@@ -692,6 +772,136 @@ describe('analytics app integration', () => {
     expect(missingAuthResponse.body.error.code).toBe('unauthorized');
     expect(invalidAuthResponse.status).toBe(401);
     expect(invalidAuthResponse.body.error.code).toBe('unauthorized');
+  });
+
+  it('requires bearer auth for custom event debug endpoints', async () => {
+    const app = createAnalyticsApp({
+      config: analyticsConfig,
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+
+    const response = await request(app).get('/debug/custom-events/names');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('unauthorized');
+  });
+
+  it('returns custom event names and counts through private debug endpoints', async () => {
+    const app = createAnalyticsApp({
+      config: analyticsConfig,
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+
+    const namesResponse = await request(app)
+      .get('/debug/custom-events/names?game_id=all&days=7')
+      .set('Authorization', 'Bearer private-token');
+    const countsResponse = await request(app)
+      .get('/debug/custom-events/counts?game_id=mythtag&event_name=level_end&days=14')
+      .set('Authorization', 'Bearer private-token');
+
+    expect(namesResponse.status).toBe(200);
+    expect(namesResponse.body.data.events).toEqual([
+      expect.objectContaining({
+        event_count: 3,
+        event_name: 'level_end',
+      }),
+      expect.objectContaining({
+        event_count: 1,
+        event_name: 'quest_started',
+      }),
+    ]);
+    expect(namesResponse.text).not.toContain('session_start');
+    expect(namesResponse.text).not.toContain('legacy_custom');
+    expect(namesResponse.text).not.toContain('player_id_hash');
+    expect(countsResponse.status).toBe(200);
+    expect(countsResponse.body.data.points.at(-1)).toEqual({
+      event_count: 3,
+      metric_date: toDateKey(startOfUtcDay(now)),
+    });
+  });
+
+  it('returns recent custom events without raw player or session identifiers', async () => {
+    const app = createAnalyticsApp({
+      config: analyticsConfig,
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+
+    const response = await request(app)
+      .get('/debug/custom-events/recent?game_id=mythtag&event_name=level_end&limit=2')
+      .set('Authorization', 'Bearer private-token');
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.events).toHaveLength(2);
+    expect(response.body.data.events[0]).toMatchObject({
+      consent_analytics: true,
+      event_name: 'level_end',
+      game_id: 'mythtag',
+      properties: {
+        level_id: 'forest_01',
+      },
+      schema_version: '1.1',
+    });
+    expect(response.text).not.toContain('player_id_hash');
+    expect(response.text).not.toContain('session_id');
+    expect(response.text).not.toContain('custom:level_end');
+  });
+
+  it('ignores legacy non-core events outside the v1.1 custom event contract', async () => {
+    const app = createAnalyticsApp({
+      config: analyticsConfig,
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+
+    const namesResponse = await request(app)
+      .get('/debug/custom-events/names?game_id=mythtag&days=7')
+      .set('Authorization', 'Bearer private-token');
+    const countsResponse = await request(app)
+      .get('/debug/custom-events/counts?game_id=mythtag&event_name=legacy_custom&days=7')
+      .set('Authorization', 'Bearer private-token');
+    const recentResponse = await request(app)
+      .get('/debug/custom-events/recent?game_id=mythtag&event_name=legacy_custom&limit=10')
+      .set('Authorization', 'Bearer private-token');
+
+    expect(namesResponse.status).toBe(200);
+    expect(namesResponse.text).not.toContain('legacy_custom');
+    expect(countsResponse.status).toBe(200);
+    expect(countsResponse.body.data.points.every((point: { event_count: number }) => point.event_count === 0)).toBe(true);
+    expect(recentResponse.status).toBe(200);
+    expect(recentResponse.body.data.events).toEqual([]);
+  });
+
+  it('rejects invalid custom event debug query params with validation_failed', async () => {
+    const app = createAnalyticsApp({
+      config: analyticsConfig,
+      logger: createLogger(),
+      now: () => now,
+      prisma,
+    });
+
+    const invalidEventNameResponse = await request(app)
+      .get('/debug/custom-events/counts?event_name=session_start')
+      .set('Authorization', 'Bearer private-token');
+    const invalidLimitResponse = await request(app)
+      .get('/debug/custom-events/recent?event_name=level_end&limit=101')
+      .set('Authorization', 'Bearer private-token');
+    const invalidDaysResponse = await request(app)
+      .get('/debug/custom-events/names?days=31')
+      .set('Authorization', 'Bearer private-token');
+
+    expect(invalidEventNameResponse.status).toBe(400);
+    expect(invalidEventNameResponse.body.error.code).toBe('validation_failed');
+    expect(invalidLimitResponse.status).toBe(400);
+    expect(invalidLimitResponse.body.error.code).toBe('validation_failed');
+    expect(invalidDaysResponse.status).toBe(400);
+    expect(invalidDaysResponse.body.error.code).toBe('validation_failed');
   });
 
   it('returns not_found for unknown routes', async () => {

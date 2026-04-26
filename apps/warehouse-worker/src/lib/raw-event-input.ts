@@ -1,8 +1,8 @@
 import type { Prisma } from '@prisma/client';
-import type { MvpEvent } from '@playpulse/schemas';
+import type { TelemetryEvent } from '@playpulse/schemas';
 
 export const mapEventToRawInput = (
-  event: MvpEvent,
+  event: TelemetryEvent,
   apiKeyId: string,
   ingestSource: string
 ): Prisma.EventRawCreateManyInput => ({

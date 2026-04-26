@@ -2,17 +2,20 @@ import type { PrismaClient } from '@prisma/client';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import type { Logger } from 'pino';
 
+import { createClientTokensRouter } from './routes/client-tokens-routes';
 import { createEventsRouter } from './routes/events-routes';
 import { createHealthRouter } from './routes/health-routes';
 import { createMetricsRouter } from './routes/metrics-routes';
 import type { IngestConfig } from './config/ingest-config';
 import { EventsRawRepo } from './repos/events-raw-repo';
 import { EventIngestService } from './services/event-ingest-service';
+import { ClientTokenService, isAllowedOrigin } from './services/client-token-service';
 import { IngestAuthService } from './services/ingest-auth-service';
 import { notFoundHandler, sendHttpError, toHttpError } from './lib/http-error';
 import { truncateIpAddress, sanitizeUserAgent } from './lib/ip';
 import { createRequestContext, type IngestResponseLocals } from './lib/request-context';
 import { createIngestMetrics, type IngestMetrics } from './lib/observability-metrics';
+import { ConfiguredRateLimiter } from './lib/configured-rate-limiter';
 import { DualWindowRateLimiter } from './lib/rate-limiter';
 import { ReplayCache } from './lib/replay-cache';
 
@@ -25,6 +28,8 @@ interface IngestAppDependencies {
   keyRateLimiter?: DualWindowRateLimiter;
   metrics?: IngestMetrics;
   replayCache?: ReplayCache;
+  publicClientEventRateLimiter?: ConfiguredRateLimiter;
+  tokenRateLimiter?: ConfiguredRateLimiter;
 }
 
 const setCorsHeaders = (response: Response, allowedOrigins: string[], requestOrigin?: string) => {
@@ -32,14 +37,14 @@ const setCorsHeaders = (response: Response, allowedOrigins: string[], requestOri
     return;
   }
 
-  if (allowedOrigins.includes(requestOrigin)) {
+  if (isAllowedOrigin(requestOrigin, allowedOrigins)) {
     response.setHeader('Access-Control-Allow-Origin', requestOrigin);
   }
 
   response.setHeader('Vary', 'Origin');
   response.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, X-Api-Key, X-Signature, X-Request-Timestamp, X-Nonce'
+    'Authorization, Content-Type, X-Api-Key, X-Signature, X-Request-Timestamp, X-Nonce'
   );
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 };
@@ -59,10 +64,19 @@ export const createIngestApp = ({
   ),
   metrics = createIngestMetrics(),
   replayCache = new ReplayCache(config.PLAYPULSE_REPLAY_WINDOW_SECONDS * 1000),
+  publicClientEventRateLimiter = new ConfiguredRateLimiter(),
+  tokenRateLimiter = new ConfiguredRateLimiter(),
 }: IngestAppDependencies) => {
   const app = express();
+  const clientTokenService = new ClientTokenService(
+    config.publicClientsById,
+    config.tokenSigningSecret,
+    now
+  );
   const authService = new IngestAuthService(
     config.apiKeysById,
+    config.authModes,
+    clientTokenService,
     replayCache,
     now,
     config.PLAYPULSE_REPLAY_WINDOW_SECONDS
@@ -111,6 +125,17 @@ export const createIngestApp = ({
         metrics.recordEventsWritten(requestContext.eventsWritten);
       }
 
+      if (requestContext?.customEventsAccepted) {
+        metrics.recordCustomEvents('accepted', requestContext.customEventsAccepted);
+      }
+
+      if (
+        requestContext?.customEventCandidates &&
+        requestContext.errorCode === 'validation_failed'
+      ) {
+        metrics.recordCustomEvents('rejected', requestContext.customEventCandidates);
+      }
+
       logger.info({
         api_key_hash: requestContext?.apiKeyHash,
         error_code: requestContext?.errorCode,
@@ -139,7 +164,10 @@ export const createIngestApp = ({
   app.use((request, response, next) => {
     setCorsHeaders(
       response,
-      config.ingestAllowedOrigins,
+      [
+        ...config.ingestAllowedOrigins,
+        ...config.publicClients.flatMap((client) => client.allowedOrigins),
+      ],
       Array.isArray(request.headers.origin) ? request.headers.origin[0] : request.headers.origin
     );
     next();
@@ -147,12 +175,21 @@ export const createIngestApp = ({
 
   app.use(createHealthRouter(now));
   app.use(createMetricsRouter(metrics));
+  if (config.authModes.includes('bearer_token')) {
+    app.use(
+      createClientTokensRouter({
+        clientTokenService,
+        tokenRateLimiter,
+      })
+    );
+  }
   app.use(
     createEventsRouter({
       authService,
       eventIngestService,
       ipRateLimiter,
       keyRateLimiter,
+      publicClientEventRateLimiter,
     })
   );
 

@@ -14,16 +14,31 @@ Production v1 includes:
 
 ## v1.1 Custom Events
 
-Custom events are explicitly deferred to v1.1. Do not relax ingest or SDK validation for arbitrary `event_name` in production v1.
+v1.1 adds GA-style custom event support without pre-registration. Game teams can call `track("level_end", {...})` with any non-core `snake_case` event name while PlayPulse enforces global privacy-safe guardrails.
 
-The v1.1 custom event slice must define:
+v1.1 includes:
 
-- Schema registration or allow-listing.
-- Privacy-safe property validation and global limits.
-- Rejection or quarantine behavior for invalid custom payloads.
-- SDK ergonomics for game teams.
-- Debug/query surfaces for stored custom events.
-- Documentation explaining what users can and cannot send.
+- Shared schema validation for core events plus open custom events.
+- Rejection, not quarantine, for invalid custom payloads.
+- Godot SDK support through the existing `track(event_name, props)` method.
+- Raw custom-event persistence in `events_raw.props_jsonb`.
+- Aggregate ingest custom-event accepted/rejected metrics without event-name labels.
+- Private analytics debug endpoints for names, daily counts, and recent events.
+
+v1.1 intentionally does not include public custom analytics, a schema registry, event allow-listing, or quarantine tables.
+
+## v1.2 Public Client Auth
+
+v1.2 adds client-safe telemetry auth for public web and native game builds. Public builds use `auth_mode = "public_client"`
+with short-lived bearer tokens from `POST /client-tokens`; they do not ship API keys or signing secrets.
+
+v1.2 includes:
+
+- Public client config for itch.io web plus standalone Windows, Linux, and macOS builds.
+- Backward-compatible HMAC auth for trusted/internal clients.
+- Per-client kill switches, replay protection, and public-client rate limits.
+- Godot SDK token fetch/refresh with memory-only tokens.
+- Consent gating in the MythTag public build before telemetry is configured.
 
 ## Post-v1 Infrastructure
 

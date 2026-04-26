@@ -8,6 +8,7 @@ export interface IngestRequestMetric {
 }
 
 export interface IngestMetrics {
+  recordCustomEvents(outcome: 'accepted' | 'rejected', count: number): void;
   recordEventsWritten(count: number): void;
   recordRequest(metric: IngestRequestMetric): void;
   render(): string;
@@ -27,6 +28,15 @@ export const createIngestMetrics = (): IngestMetrics => {
   const registry = new PrometheusRegistry();
 
   return {
+    recordCustomEvents: (outcome, count) => {
+      registry.incrementCounter(
+        'ingest_custom_events_total',
+        'Custom events accepted or rejected by aggregate outcome.',
+        ['outcome'],
+        { outcome },
+        count
+      );
+    },
     recordEventsWritten: (count) => {
       registry.incrementCounter(
         'ingest_events_written_total',
@@ -76,6 +86,22 @@ export const createIngestMetrics = (): IngestMetrics => {
         registry.incrementCounter(
           'ingest_signature_failures_total',
           'Ingest signature and replay protection failures by reason.',
+          ['reason'],
+          { reason: metric.errorCode }
+        );
+      }
+
+      if (
+        metric.errorCode === 'signature_invalid' ||
+        metric.errorCode === 'timestamp_out_of_window' ||
+        metric.errorCode === 'replay_detected' ||
+        metric.errorCode === 'token_invalid' ||
+        metric.errorCode === 'token_expired' ||
+        metric.errorCode === 'origin_not_allowed'
+      ) {
+        registry.incrementCounter(
+          'ingest_auth_failures_total',
+          'Ingest authentication and replay protection failures by reason.',
           ['reason'],
           { reason: metric.errorCode }
         );

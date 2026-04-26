@@ -6,6 +6,10 @@ import {
   analyticsSessionsDailyResponseSchema,
   analyticsSummaryResponseSchema,
   characterSelectedEventSchema,
+  customEventCountsResponseSchema,
+  customEventNamesResponseSchema,
+  customEventRecentResponseSchema,
+  customEventSchema,
   ingestEventsRequestSchema,
   matchEndEventSchema,
   sessionStartEventSchema,
@@ -59,6 +63,195 @@ describe('schemas', () => {
             character_id: 'berserker',
             score: 3420,
             damage_dealt: 18750,
+          },
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts valid custom events with flat primitive properties', () => {
+    const result = customEventSchema.safeParse({
+      event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+      event_name: 'level_end',
+      schema_version: '1.1',
+      occurred_at: '2025-09-20T19:05:31Z',
+      session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+      player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+      game_id: 'mythclash',
+      game_version: '0.6.2',
+      build_id: 'mc-2025.09.18',
+      platform: 'pc',
+      locale: 'en-US',
+      consent_analytics: true,
+      properties: {
+        completed: true,
+        duration_s: 180,
+        level_id: 'forest_01',
+        rewards: ['coin', 'gem'],
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects custom events that reuse reserved core event names', () => {
+    const result = customEventSchema.safeParse({
+      event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+      event_name: 'session_start',
+      schema_version: '1.1',
+      occurred_at: '2025-09-20T19:05:31Z',
+      session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+      player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+      game_id: 'mythclash',
+      game_version: '0.6.2',
+      build_id: 'mc-2025.09.18',
+      platform: 'pc',
+      consent_analytics: true,
+      properties: {},
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects custom event guardrail violations', () => {
+    const base = {
+      event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+      event_name: 'level_end',
+      schema_version: '1.1',
+      occurred_at: '2025-09-20T19:05:31Z',
+      session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+      player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+      game_id: 'mythclash',
+      game_version: '0.6.2',
+      build_id: 'mc-2025.09.18',
+      platform: 'pc',
+      consent_analytics: true,
+    };
+
+    const invalidPropertySets = [
+      { nested: { level: 3 } },
+      { nullable: null },
+      { nested_array: [['a']] },
+      { invalidKey: 'bad' },
+      { email: 'player@example.com' },
+      Object.fromEntries(Array.from({ length: 26 }, (_, index) => [`key_${index}`, index])),
+      { big: 'x'.repeat(1600) },
+    ];
+
+    for (const properties of invalidPropertySets) {
+      expect(customEventSchema.safeParse({ ...base, properties }).success).toBe(false);
+    }
+  });
+
+  it('rejects identifier, auth, contact, and free-text custom property keys', () => {
+    const base = {
+      event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+      event_name: 'level_end',
+      schema_version: '1.1',
+      occurred_at: '2025-09-20T19:05:31Z',
+      session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+      player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+      game_id: 'mythclash',
+      game_version: '0.6.2',
+      build_id: 'mc-2025.09.18',
+      platform: 'pc',
+      consent_analytics: true,
+    };
+    const rejectedKeys = [
+      'account_id',
+      'api_key',
+      'auth_token',
+      'chat_text',
+      'device_id',
+      'email_address',
+      'error_message',
+      'player_id',
+      'player_id_hash',
+      'player_name',
+      'session_id',
+      'user_external_id',
+    ];
+
+    for (const key of rejectedKeys) {
+      expect(customEventSchema.safeParse({ ...base, properties: { [key]: 'unsafe' } }).success).toBe(false);
+    }
+  });
+
+  it('rejects unsafe custom string values', () => {
+    const base = {
+      event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+      event_name: 'level_end',
+      schema_version: '1.1',
+      occurred_at: '2025-09-20T19:05:31Z',
+      session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+      player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+      game_id: 'mythclash',
+      game_version: '0.6.2',
+      build_id: 'mc-2025.09.18',
+      platform: 'pc',
+      consent_analytics: true,
+    };
+    const unsafeValues = [
+      'player@example.com',
+      'Bearer abcdef123456',
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature',
+      'x'.repeat(129),
+    ];
+
+    for (const value of unsafeValues) {
+      expect(customEventSchema.safeParse({ ...base, properties: { level_id: value } }).success).toBe(false);
+    }
+  });
+
+  it('accepts gameplay identifier custom property keys', () => {
+    const result = customEventSchema.safeParse({
+      event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+      event_name: 'level_end',
+      schema_version: '1.1',
+      occurred_at: '2025-09-20T19:05:31Z',
+      session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+      player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+      game_id: 'mythclash',
+      game_version: '0.6.2',
+      build_id: 'mc-2025.09.18',
+      platform: 'pc',
+      consent_analytics: true,
+      properties: {
+        build_id: 'mc-2025.09.18',
+        character_id: 'warden',
+        item_id: 'iron_sword',
+        level_id: 'forest_01',
+        loadout_id: 'starter',
+        map_id: 'shrine_plaza',
+        match_id: '2f9fe1c3-7d3a-4cb8-8bd8-1df54ad2a8a1',
+        mode_id: 'ranked',
+        quest_id: 'intro_path',
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts custom events in ingest batches', () => {
+    const result = ingestEventsRequestSchema.safeParse({
+      events: [
+        {
+          event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+          event_name: 'item_crafted',
+          schema_version: '1.1',
+          occurred_at: '2025-09-20T19:05:31Z',
+          session_id: 'bd1c2c1b-b9d3-4c0f-8b05-0cb089d3f3f9',
+          player_id_hash: 'c4a1f1d5a6294eab2ce8bba1f5b5fd27a9b6e0fead4b7d2a1a8cce71d2e9c2b1',
+          game_id: 'mythclash',
+          game_version: '0.6.2',
+          build_id: 'mc-2025.09.18',
+          platform: 'pc',
+          consent_analytics: true,
+          properties: {
+            item_id: 'iron_sword',
+            rarity_tier: 2,
           },
         },
       ],
@@ -272,6 +465,76 @@ describe('schemas', () => {
           game_id: 'all',
           last_updated: '2025-09-20T18:25:00Z',
           weeks: 8,
+        },
+        request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+      }).success
+    ).toBe(true);
+  });
+
+  it('accepts valid custom event debug responses', () => {
+    expect(
+      customEventNamesResponseSchema.safeParse({
+        data: {
+          days: 7,
+          events: [
+            {
+              event_count: 12,
+              event_name: 'level_end',
+              first_seen: '2025-09-20T18:25:00Z',
+              last_seen: '2025-09-20T19:25:00Z',
+            },
+          ],
+          game_id: 'all',
+          last_updated: '2025-09-20T19:25:00Z',
+        },
+        request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+      }).success
+    ).toBe(true);
+
+    expect(
+      customEventCountsResponseSchema.safeParse({
+        data: {
+          days: 14,
+          event_name: 'level_end',
+          game_id: 'mythtag',
+          last_updated: '2025-09-20T19:25:00Z',
+          points: [
+            {
+              event_count: 3,
+              metric_date: '2025-09-20',
+            },
+          ],
+        },
+        request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
+      }).success
+    ).toBe(true);
+
+    expect(
+      customEventRecentResponseSchema.safeParse({
+        data: {
+          event_name: 'level_end',
+          events: [
+            {
+              build_id: 'mt-2025.09.19',
+              consent_analytics: true,
+              event_id: '3cf3d980-fd78-42f5-8f09-58f1af8c184d',
+              event_name: 'level_end',
+              game_id: 'mythtag',
+              game_version: '0.3.0',
+              locale: 'pt-BR',
+              occurred_at: '2025-09-20T19:05:31Z',
+              platform: 'pc',
+              properties: {
+                completed: true,
+                duration_s: 180,
+              },
+              received_at: '2025-09-20T19:05:35Z',
+              schema_version: '1.1',
+            },
+          ],
+          game_id: 'mythtag',
+          last_updated: '2025-09-20T19:25:00Z',
+          limit: 25,
         },
         request_id: '01J8YX3TKYAF9V0P7WBH54M2RB',
       }).success

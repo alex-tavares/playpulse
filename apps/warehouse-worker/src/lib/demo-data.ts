@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import type { MvpEvent } from '@playpulse/schemas';
+import type { TelemetryEvent } from '@playpulse/schemas';
 import {
   createCharacterSelectedEvent,
   createMatchEndEvent,
@@ -27,7 +27,7 @@ interface DemoGameConfig {
 
 export interface DemoSeedEvent {
   apiKeyId: string;
-  event: MvpEvent;
+  event: TelemetryEvent;
 }
 
 const demoConfigs: DemoGameConfig[] = [
