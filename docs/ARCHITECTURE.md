@@ -3,13 +3,14 @@
 ## Components
 1) **Godot SDK (client)**
    - `track(event_name, props)`; queue, batch, retries; offline buffer.
-   - Sends `X-Api-Key` + `X-Signature` (HMAC-SHA256 of raw body).
+   - Trusted builds send `X-Api-Key` + `X-Signature` (HMAC-SHA256 of raw body).
+   - Public web/native builds fetch short-lived bearer tokens with `auth_mode = "public_client"` and do not ship secrets.
    - Respects `consent_analytics`.
 
 2) **Ingestion API** (Node/Express + TS)
    - Endpoint `POST /events` (batch).
    - Zod validation using shared schemas.
-   - Request auth: API key + HMAC; per-IP and per-key rate limits.
+   - Request auth: API key + HMAC or short-lived public client bearer tokens; per-IP and per-key/client rate limits.
    - JSON logging (no bodies). Body size < 1 MB.
    - Insert into Postgres `events_raw` via Prisma.
 

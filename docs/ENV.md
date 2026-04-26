@@ -25,6 +25,9 @@ Use `.env.example` for local development defaults and `.env.production.example` 
 | `PLAYPULSE_INGEST_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS allow-list for ingest requests. |
 | `PLAYPULSE_INGEST_TRUST_PROXY` | `false` | Whether ingest should trust proxy forwarding headers when resolving client IPs. |
 | `PLAYPULSE_INGEST_API_KEYS_JSON` | `[]` | JSON array of enabled ingest credentials shaped as `{ "key_id", "signing_secret", "game_id", "enabled" }`. |
+| `PLAYPULSE_INGEST_AUTH_MODES` | `hmac` | Comma-separated enabled ingest auth modes. Use `hmac,bearer_token` to enable public client tokens. |
+| `PLAYPULSE_INGEST_TOKEN_SIGNING_SECRET` | unset | Strong server-only secret used to sign short-lived public client tokens. Required when `bearer_token` is enabled. |
+| `PLAYPULSE_INGEST_PUBLIC_CLIENTS_JSON` | `[]` | JSON array of public client configs with `client_id`, `game_id`, `platform_channel`, allowed builds/versions/origins, TTL, and optional rate limits. |
 | `PLAYPULSE_ANALYTICS_PORT` | `4002` | Bind port for the analytics API service. |
 | `PLAYPULSE_ANALYTICS_HOST` | `0.0.0.0` | Bind host for the analytics API service. |
 | `PLAYPULSE_ANALYTICS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS allow-list for analytics requests. |
@@ -57,3 +60,9 @@ Companion repos own additional configuration:
 - `warehouse-worker` runs under the `jobs` profile for refresh and seed operations.
 
 The production template expects an external Postgres-compatible database through `PLAYPULSE_DATABASE_URL`. It does not start a database container.
+
+## Public Client Auth
+
+Public web/native game builds must use `auth_mode = "public_client"` and fetch short-lived bearer tokens from
+`POST /client-tokens`; they must not ship `api_key` or `signing_secret`. HMAC credentials remain for trusted/internal
+builds only. Public client configs are kill-switchable by setting `enabled` to `false` for the affected `client_id`.

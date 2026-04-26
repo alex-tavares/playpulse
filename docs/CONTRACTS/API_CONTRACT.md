@@ -15,7 +15,7 @@ This document defines the milestone-ready API contracts for PlayPulse v1.x.
 
 ## Visibility Model
 
-- `POST /events` is write-only and requires signed client credentials.
+- `POST /events` is write-only and requires either trusted HMAC credentials or a short-lived public client bearer token.
 - `GET /metrics/summary`, `GET /metrics/sessions/daily`, and `GET /metrics/characters/popularity` are public-capable contracts.
 - `GET /metrics/retention/cohorts` is private-only and must require authenticated consumer access.
 - `GET /debug/custom-events/*` endpoints are private-only and must require authenticated consumer access.
@@ -26,9 +26,9 @@ This document defines the milestone-ready API contracts for PlayPulse v1.x.
 
 ### `POST /events`
 
-Accepts a signed batch of telemetry events for durable storage.
+Accepts an authenticated batch of telemetry events for durable storage.
 
-#### Required headers
+#### Trusted HMAC headers
 
 | Header | Rules |
 | --- | --- |
@@ -39,6 +39,52 @@ Accepts a signed batch of telemetry events for durable storage.
 | `Content-Type` | Must be `application/json` |
 
 HMAC signs the exact raw request body bytes using the canonical string `"{timestamp}\n{nonce}\n{raw_body}"`. The server must verify against the raw body, not re-encoded JSON.
+
+#### Public client bearer headers
+
+| Header | Rules |
+| --- | --- |
+| `Authorization` | `Bearer <short_lived_token>` returned by `POST /client-tokens` |
+| `X-Request-Timestamp` | Required Unix epoch seconds |
+| `X-Nonce` | Required UUID v4 |
+| `Content-Type` | Must be `application/json` |
+
+Public bearer tokens are intended for browser and native builds that cannot keep secrets. They are short-lived,
+memory-only client credentials with replay protection, per-client rate limits, and server-side kill switches.
+
+### `POST /client-tokens`
+
+Issues short-lived public client tokens for configured browser/native game builds. This endpoint is public but must be
+rate-limited and served only over HTTPS in production.
+
+#### Request body
+
+```json
+{
+  "client_id": "mythtag-web-itch-060",
+  "game_id": "mythtag",
+  "game_version": "0.6.0",
+  "build_id": "mt060webitch",
+  "platform": "pc",
+  "platform_channel": "web_itch"
+}
+```
+
+#### Success response
+
+```json
+{
+  "data": {
+    "token": "opaque-short-lived-token",
+    "expires_at": "2026-04-25T13:00:00.000Z",
+    "refresh_after_s": 3000
+  },
+  "request_id": "01J8YX3TKYAF9V0P7WBH54M2RB"
+}
+```
+
+Token requests are rejected when the client is disabled, the build/version/channel is not allowed, the request is
+malformed, or a browser origin is not allowed.
 
 #### Request body
 

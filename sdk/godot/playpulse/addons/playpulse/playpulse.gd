@@ -38,6 +38,10 @@ var _inflight_batch: Array = []
 var _retry_attempt := 0
 var _pending_player_seed := ""
 var _circuit_open_until := 0
+var _client_token := ""
+var _client_token_expires_at_unix := 0
+var _client_token_refresh_after_s := 3000
+var _client_token_request_inflight := false
 var _clock_override := -1
 var _shutdown_started := false
 var _quit_requested := false
@@ -72,7 +76,9 @@ func _ready() -> void:
 func configure(config: Dictionary) -> int:
 	var parsed := _config_parser.parse_config(config)
 	if not parsed["ok"]:
-		push_warning("PlayPulse configure rejected config: %s" % parsed.get("message", "unknown error"))
+		push_warning(
+			"PlayPulse configure rejected config: %s" % parsed.get("message", "unknown error")
+		)
 		return ERR_INVALID_PARAMETER
 
 	_retry_timer.stop()
@@ -80,6 +86,10 @@ func configure(config: Dictionary) -> int:
 	_retry_attempt = 0
 	_pending_player_seed = ""
 	_circuit_open_until = 0
+	_client_token = ""
+	_client_token_expires_at_unix = 0
+	_client_token_refresh_after_s = 3000
+	_client_token_request_inflight = false
 	_shutdown_started = false
 	_quit_requested = false
 	_quit_timer.stop()
@@ -88,9 +98,7 @@ func configure(config: Dictionary) -> int:
 	_state = _persistence.load_state()
 	_bootstrap_state()
 	_queue = _persistence.trim_events(
-		_persistence.load_events(),
-		PERSISTED_EVENT_CAP,
-		PERSISTED_EVENT_BYTES_CAP
+		_persistence.load_events(), PERSISTED_EVENT_CAP, PERSISTED_EVENT_BYTES_CAP
 	)
 	_persistence.save_events(_queue)
 	_flush_timer.wait_time = float(_config["flush_interval_sec"])
@@ -101,6 +109,21 @@ func configure(config: Dictionary) -> int:
 		flush(true)
 
 	return OK
+
+
+func configure_from_file(config_path: String = "res://playpulse.config.json") -> int:
+	if not FileAccess.file_exists(config_path):
+		return ERR_FILE_NOT_FOUND
+
+	var file := FileAccess.open(config_path, FileAccess.READ)
+	if file == null:
+		return ERR_CANT_OPEN
+
+	var parsed_json: Variant = JSON.parse_string(file.get_as_text())
+	if typeof(parsed_json) != TYPE_DICTIONARY:
+		return ERR_PARSE_ERROR
+
+	return configure(parsed_json)
 
 
 func track(event_name: String, props: Dictionary = {}) -> int:
@@ -159,6 +182,7 @@ func set_consent(enabled: bool) -> int:
 		_queue.clear()
 		_inflight_batch.clear()
 		_retry_attempt = 0
+		_client_token_request_inflight = false
 		_transport.cancel()
 		_retry_timer.stop()
 		_persistence.clear_events()
@@ -195,11 +219,14 @@ func shutdown() -> int:
 	if _state["consent_enabled"]:
 		var duration_s: int = max(0, _now_unix_seconds() - int(_state["session_started_at_unix"]))
 		if _queue.size() < QUEUE_CAP:
-			track("session_end", {
-				"duration_s": duration_s,
-				"exit_reason": "user_exit",
-				"xp_earned": 0,
-			})
+			track(
+				"session_end",
+				{
+					"duration_s": duration_s,
+					"exit_reason": "user_exit",
+					"xp_earned": 0,
+				}
+			)
 
 		flush(true)
 
@@ -215,24 +242,22 @@ func _notification(what: int) -> void:
 func _bootstrap_state() -> void:
 	_state["device_id"] = String(_state.get("device_id", _crypto.generate_uuid_v4()))
 	_state["consent_enabled"] = bool(_state.get("consent_enabled", _config["initial_consent"]))
-	_state["player_seed"] = _config["player_seed"] if _config["player_seed"] != "" else String(
-		_state.get("player_seed", "")
+	_state["player_seed"] = (
+		_config["player_seed"]
+		if _config["player_seed"] != ""
+		else String(_state.get("player_seed", ""))
 	)
 	if _state["player_seed"] == "":
 		_state["player_seed"] = _state["device_id"]
 
 	_state["player_id_hash"] = _crypto.derive_player_id_hash(
-		_config["game_id"],
-		_state["device_id"],
-		_state["player_seed"]
+		_config["game_id"], _state["device_id"], _state["player_seed"]
 	)
 	_state["session_id"] = String(_state.get("session_id", _crypto.generate_uuid_v4()))
 	_state["session_started_at_unix"] = int(
 		_state.get("session_started_at_unix", _now_unix_seconds())
 	)
-	_state["last_activity_at_unix"] = int(
-		_state.get("last_activity_at_unix", _now_unix_seconds())
-	)
+	_state["last_activity_at_unix"] = int(_state.get("last_activity_at_unix", _now_unix_seconds()))
 
 
 func _build_event(event_name: String, props: Dictionary) -> Dictionary:
@@ -255,13 +280,16 @@ func _build_event(event_name: String, props: Dictionary) -> Dictionary:
 
 
 func _schema_version_for_event(event_name: String) -> String:
-	if [
-		"session_start",
-		"session_end",
-		"match_start",
-		"match_end",
-		"character_selected",
-	].has(event_name):
+	if (
+		[
+			"session_start",
+			"session_end",
+			"match_start",
+			"match_end",
+			"character_selected",
+		]
+		. has(event_name)
+	):
 		return "1.0"
 
 	return "1.1"
@@ -296,23 +324,66 @@ func _send_inflight_batch() -> int:
 	if _inflight_batch.is_empty():
 		return OK
 
+	if _config["auth_mode"] == "public_client" and _needs_client_token_refresh():
+		return _request_client_token()
+
 	var body := JSON.stringify({"events": _inflight_batch})
 	var timestamp := str(_now_unix_seconds())
 	var nonce := _crypto.generate_uuid_v4()
-	var signature := _crypto.hmac_sha256_base64(
-		_config["signing_secret"],
-		"%s\n%s\n%s" % [timestamp, nonce, body]
+	var headers := PackedStringArray(
+		[
+			"Content-Type: application/json",
+			"X-Request-Timestamp: %s" % timestamp,
+			"X-Nonce: %s" % nonce,
+		]
 	)
-	var headers := PackedStringArray([
-		"Content-Type: application/json",
-		"X-Api-Key: %s" % _config["api_key"],
-		"X-Signature: %s" % signature,
-		"X-Request-Timestamp: %s" % timestamp,
-		"X-Nonce: %s" % nonce,
-	])
+	if _config["auth_mode"] == "public_client":
+		headers.append("Authorization: Bearer %s" % _client_token)
+	else:
+		var signature := _crypto.hmac_sha256_base64(
+			_config["signing_secret"], "%s\n%s\n%s" % [timestamp, nonce, body]
+		)
+		headers.append("X-Api-Key: %s" % _config["api_key"])
+		headers.append("X-Signature: %s" % signature)
 
 	var send_error: int = _transport.send("%s/events" % _config["ingest_base_url"], headers, body)
 	if send_error != OK:
+		_schedule_retry()
+
+	return send_error
+
+
+func _needs_client_token_refresh() -> bool:
+	if _client_token == "":
+		return true
+	return _now_unix_seconds() >= _client_token_expires_at_unix - 600
+
+
+func _request_client_token() -> int:
+	if _client_token_request_inflight:
+		return ERR_BUSY
+
+	var body := (
+		JSON
+		. stringify(
+			{
+				"build_id": _config["build_id"],
+				"client_id": _config["client_id"],
+				"game_id": _config["game_id"],
+				"game_version": _config["game_version"],
+				"locale": _effective_locale(),
+				"platform": _platform_id(),
+				"platform_channel": _config["platform_channel"],
+			}
+		)
+	)
+	var headers := PackedStringArray(["Content-Type: application/json"])
+	_client_token_request_inflight = true
+	var send_error: int = _transport.send(
+		"%s/client-tokens" % _config["ingest_base_url"], headers, body
+	)
+	if send_error != OK:
+		_client_token_request_inflight = false
 		_schedule_retry()
 
 	return send_error
@@ -329,6 +400,10 @@ func _on_retry_timer_timeout() -> void:
 
 
 func _on_transport_completed(result: Dictionary) -> void:
+	if _client_token_request_inflight:
+		_on_client_token_completed(result)
+		return
+
 	var status_code := int(result.get("status_code", 0))
 	var transport_error := int(result.get("transport_error", ERR_CANT_CONNECT))
 	if transport_error != OK or status_code == 0 or status_code >= 500:
@@ -348,9 +423,7 @@ func _on_transport_completed(result: Dictionary) -> void:
 	var flushed_batch_size := _inflight_batch.size()
 	_commit_inflight_batch()
 	emit_signal(
-		"flush_completed",
-		true,
-		{"status_code": status_code, "batch_size": flushed_batch_size}
+		"flush_completed", true, {"status_code": status_code, "batch_size": flushed_batch_size}
 	)
 	if not _pending_player_seed.is_empty():
 		_apply_player_seed(_pending_player_seed)
@@ -358,6 +431,39 @@ func _on_transport_completed(result: Dictionary) -> void:
 
 	if _quit_requested and _can_complete_quit():
 		_finish_quit()
+
+
+func _on_client_token_completed(result: Dictionary) -> void:
+	_client_token_request_inflight = false
+	var status_code := int(result.get("status_code", 0))
+	var transport_error := int(result.get("transport_error", ERR_CANT_CONNECT))
+	if transport_error != OK or status_code < 200 or status_code >= 300:
+		_schedule_retry()
+		return
+
+	var parsed: Variant = JSON.parse_string(str(result.get("body_text", "")))
+	if typeof(parsed) != TYPE_DICTIONARY or not parsed.has("data"):
+		_schedule_retry()
+		return
+
+	var data: Dictionary = parsed["data"]
+	var token := str(data.get("token", ""))
+	var expires_at := _parse_iso8601_utc(str(data.get("expires_at", "")))
+	if token == "" or expires_at <= _now_unix_seconds():
+		_schedule_retry()
+		return
+
+	_client_token = token
+	_client_token_expires_at_unix = expires_at
+	_client_token_refresh_after_s = int(data.get("refresh_after_s", _client_token_refresh_after_s))
+	_send_inflight_batch()
+
+
+func _parse_iso8601_utc(value: String) -> int:
+	var normalized := value.replace("Z", "")
+	if normalized.contains("."):
+		normalized = normalized.split(".")[0]
+	return Time.get_unix_time_from_datetime_string(normalized)
 
 
 func _schedule_retry() -> void:
@@ -371,11 +477,15 @@ func _schedule_retry() -> void:
 	var wait_seconds := _next_retry_delay_seconds(_retry_attempt)
 	_retry_attempt += 1
 	_retry_timer.start(wait_seconds)
-	emit_signal("flush_completed", false, {"retry_in_s": wait_seconds, "retry_attempt": _retry_attempt})
+	emit_signal(
+		"flush_completed", false, {"retry_in_s": wait_seconds, "retry_attempt": _retry_attempt}
+	)
 
 
 func _next_retry_delay_seconds(attempt_index: int) -> float:
-	var base_delay := float(RETRY_SCHEDULE_SECONDS[min(attempt_index, RETRY_SCHEDULE_SECONDS.size() - 1)])
+	var base_delay := float(
+		RETRY_SCHEDULE_SECONDS[min(attempt_index, RETRY_SCHEDULE_SECONDS.size() - 1)]
+	)
 	var jitter := randf_range(0.0, 0.25)
 	return base_delay + jitter
 
@@ -398,9 +508,7 @@ func _drop_inflight_batch() -> void:
 func _apply_player_seed(seed: String) -> void:
 	_state["player_seed"] = seed
 	_state["player_id_hash"] = _crypto.derive_player_id_hash(
-		_config["game_id"],
-		_state["device_id"],
-		seed
+		_config["game_id"], _state["device_id"], seed
 	)
 	_renew_session_if_needed(true)
 	_persist_runtime_state()
@@ -475,7 +583,11 @@ func _request_shutdown_and_quit() -> void:
 
 
 func _can_complete_quit() -> bool:
-	return not _transport.is_busy() and _inflight_batch.is_empty()
+	return (
+		not _transport.is_busy()
+		and _inflight_batch.is_empty()
+		and not _client_token_request_inflight
+	)
 
 
 func _on_quit_timer_timeout() -> void:

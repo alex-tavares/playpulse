@@ -1,6 +1,7 @@
 import express, { Router, type RequestHandler } from 'express';
 
 import { createEventsController } from '../controllers/events-controller';
+import { ConfiguredRateLimiter } from '../lib/configured-rate-limiter';
 import { HttpError } from '../lib/http-error';
 import { EventIngestService } from '../services/event-ingest-service';
 import { IngestAuthService } from '../services/ingest-auth-service';
@@ -12,6 +13,7 @@ interface EventsRouterDependencies {
   eventIngestService: EventIngestService;
   ipRateLimiter: DualWindowRateLimiter;
   keyRateLimiter: DualWindowRateLimiter;
+  publicClientEventRateLimiter: ConfiguredRateLimiter;
 }
 
 const requireJsonContentType: RequestHandler<never, unknown, unknown, unknown, IngestResponseLocals> = (
@@ -35,12 +37,14 @@ export const createEventsRouter = ({
   eventIngestService,
   ipRateLimiter,
   keyRateLimiter,
+  publicClientEventRateLimiter,
 }: EventsRouterDependencies) => {
   const router = Router();
   const controller = createEventsController({
     authService,
     eventIngestService,
     keyRateLimiter,
+    publicClientEventRateLimiter,
   });
 
   const enforceIpRateLimit: RequestHandler<

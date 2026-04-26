@@ -33,6 +33,9 @@ Rules:
 | `unauthorized` | 401 | Authentication is missing or invalid and no more specific auth code applies. |
 | `signature_invalid` | 401 | HMAC validation fails for the signed ingest request. |
 | `timestamp_out_of_window` | 401 | `X-Request-Timestamp` is outside the accepted replay window. |
+| `token_invalid` | 401 | Public client bearer token is malformed, tampered with, wrong-scope, or no longer tied to an enabled client. |
+| `token_expired` | 401 | Public client bearer token is past its expiry. |
+| `origin_not_allowed` | 403 | Public browser client origin is not allow-listed for the configured client. |
 | `replay_detected` | 409 | A previously seen `(api_key, nonce)` pair is replayed. |
 | `payload_too_large` | 413 | Request body exceeds the 1 MB limit. |
 | `rate_limited_ip` | 429 | The caller exceeds the IP-based rate limit. |
@@ -56,6 +59,9 @@ Rules:
 - Missing or invalid auth -> `401 unauthorized`
 - Invalid HMAC -> `401 signature_invalid`
 - Expired timestamp -> `401 timestamp_out_of_window`
+- Invalid public client token -> `401 token_invalid`
+- Expired public client token -> `401 token_expired`
+- Disallowed public browser origin -> `403 origin_not_allowed`
 - Nonce replay -> `409 replay_detected`
 - Oversized body -> `413 payload_too_large`
 - IP throttle -> `429 rate_limited_ip`

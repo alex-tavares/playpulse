@@ -27,6 +27,19 @@ v1.1 includes:
 
 v1.1 intentionally does not include public custom analytics, a schema registry, event allow-listing, or quarantine tables.
 
+## v1.2 Public Client Auth
+
+v1.2 adds client-safe telemetry auth for public web and native game builds. Public builds use `auth_mode = "public_client"`
+with short-lived bearer tokens from `POST /client-tokens`; they do not ship API keys or signing secrets.
+
+v1.2 includes:
+
+- Public client config for itch.io web plus standalone Windows, Linux, and macOS builds.
+- Backward-compatible HMAC auth for trusted/internal clients.
+- Per-client kill switches, replay protection, and public-client rate limits.
+- Godot SDK token fetch/refresh with memory-only tokens.
+- Consent gating in the MythTag public build before telemetry is configured.
+
 ## Post-v1 Infrastructure
 
 Post-v1 infrastructure work includes automated deploys, a Loki/Grafana bundle, OpenTelemetry tracing, WAF/CDN guidance, public status pages, and optional cloud infrastructure modules.

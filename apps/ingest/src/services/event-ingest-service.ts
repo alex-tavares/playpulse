@@ -40,7 +40,7 @@ export class EventIngestService {
     private readonly now: () => Date
   ) {}
 
-  async ingest(payload: unknown, apiKeyId: string) {
+  async ingest(payload: unknown, apiKeyId: string, expectedGameId?: 'mythclash' | 'mythtag') {
     const unsupportedSchemaVersion = findUnsupportedSchemaVersion(payload);
     if (unsupportedSchemaVersion) {
       throw new HttpError(
@@ -55,6 +55,10 @@ export class EventIngestService {
       throw new HttpError(400, 'validation_failed', 'Request body did not match the expected schema', {
         details: formatValidationDetails(parsed.error.issues),
       });
+    }
+
+    if (expectedGameId && parsed.data.events.some((event) => event.game_id !== expectedGameId)) {
+      throw new HttpError(401, 'unauthorized', 'Credential is not allowed for event game_id');
     }
 
     const receivedAt = this.now();

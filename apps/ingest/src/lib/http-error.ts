@@ -7,6 +7,9 @@ export type ErrorCode =
   | 'signature_invalid'
   | 'timestamp_out_of_window'
   | 'replay_detected'
+  | 'token_expired'
+  | 'token_invalid'
+  | 'origin_not_allowed'
   | 'payload_too_large'
   | 'rate_limited_ip'
   | 'rate_limited_key'
@@ -90,6 +93,15 @@ export const toHttpError = (error: unknown): HttpError => {
     error.type === 'entity.too.large'
   ) {
     return new HttpError(413, 'payload_too_large', 'Request body exceeds 1 MB');
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    error.type === 'entity.parse.failed'
+  ) {
+    return new HttpError(400, 'bad_request', 'Request body is not valid JSON');
   }
 
   return new HttpError(500, 'internal_error', 'Unexpected server-side failure');

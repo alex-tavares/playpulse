@@ -90,6 +90,22 @@ export const createIngestMetrics = (): IngestMetrics => {
           { reason: metric.errorCode }
         );
       }
+
+      if (
+        metric.errorCode === 'signature_invalid' ||
+        metric.errorCode === 'timestamp_out_of_window' ||
+        metric.errorCode === 'replay_detected' ||
+        metric.errorCode === 'token_invalid' ||
+        metric.errorCode === 'token_expired' ||
+        metric.errorCode === 'origin_not_allowed'
+      ) {
+        registry.incrementCounter(
+          'ingest_auth_failures_total',
+          'Ingest authentication and replay protection failures by reason.',
+          ['reason'],
+          { reason: metric.errorCode }
+        );
+      }
     },
     render: () => registry.render(),
   };
